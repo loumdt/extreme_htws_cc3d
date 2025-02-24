@@ -704,7 +704,6 @@ def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg
     f_france_mask = nc.Dataset(os.path.join(datadir,database,"Mask",f"Mask_France_{database}_{resolution}deg.nc"),mode='r')
     france_mask = f_france_mask.variables['mask'][:]
     #creating a masked array full of -9999
-    label[:] = ma.array(-9999*np.ones((len(time_in),len(lat_in),len(lon_in))),mask=[land_sea_mask]*(92*(year_end-year_beg+1))) #shape is time*lat*lon
     
     print("Computing cc3d.connected_components labels and dusting...")
     #nb_htws_list = [0]*30
@@ -713,8 +712,11 @@ def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg
     N_labels=0 #count the numbers of patterns
     unique_htw_cc3d_idx = []
 
+    year_events_dict = {}
+
     for year in tqdm(range((year_end-year_beg+1))) :#iterate over the years
 
+        label[year*92:(year+1)*92,:,:] = ma.array(-9999*np.ones((92,len(lat_in),len(lon_in))),mask=[land_sea_mask]*92) #shape is 92*lat*lon
         sub_htws = ma.masked_where([land_sea_mask]*92,f_pot_htws.variables[datavar][year*92:(year+1)*92,:,:])
         sub_htws = ma.filled(sub_htws,fill_value=-9999)
         sub_htws = (sub_htws!=-9999)
@@ -731,6 +733,7 @@ def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg
         for val in np.unique(label[year*92:(year+1)*92,:,:]) :
             try :
                 unique_htw_cc3d_idx.append(int(val))
+                year_events_dict[val] = year
             except :
                 pass
         #update N_labels
@@ -771,7 +774,8 @@ def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg
     pathlib.Path(output_dir_anim).mkdir(parents=True,exist_ok=True)
 
     for event in tqdm(unique_htw_cc3d_idx[:]):
-        time_idx_var = [int(i) for i in np.unique(np.argwhere(label[:]==event)[:,0])]
+        year = year_events_dict[event]
+        time_idx_var = [int(i) for i in np.unique(np.argwhere(label[year*92:(year+1)*92,:,:]==event)[:,0])]
 
         dates_JJA = time_in[time_idx_var]
         dates_all_year = dates_all_all_year[time_idx_var]
@@ -779,7 +783,7 @@ def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg
         df_htw.loc[event,'idx_end_JJA'] = dates_JJA[-1]
         df_htw.loc[event,'idx_beg_all_year'] = dates_all_year[0]
         df_htw.loc[event,'idx_end_all_year'] = dates_all_year[-1]
-        df_htw.loc[event,'Year'] = int(year_beg+dates_JJA[0]//92) #year of the heatwave event
+        df_htw.loc[event,'Year'] = year_beg+year #year of the heatwave event
 
         if run_animation :
             var_scatter = label[time_idx_var,:,:] #all labels of the chosen period
