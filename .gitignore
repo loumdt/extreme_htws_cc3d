@@ -29,3 +29,5 @@ ffmpeg.exe
 *.png
 animation_backup
 docs/*
+
+runs_needed.txt
