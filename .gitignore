@@ -13,10 +13,6 @@ Data/Pop/GHSL_Data_Package_2022.pdf
 Data/UNDP/*
 
 Code/Mask/*.png
-Code/CDS_API_request/
-Code/Cluster_analysis/*
-Code/E-OBS_use/*
-Code/ERA5_use/*
 
 Output/*
 !Output/summary_detection_overlap_sensitivity.xlsx
