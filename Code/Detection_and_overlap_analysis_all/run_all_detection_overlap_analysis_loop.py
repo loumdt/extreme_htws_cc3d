@@ -15,18 +15,18 @@ from analysis_classification_plot_functions import *
 # utci absolute thresholds : [26,32,38,46]
 # t2m absolute thresholds : [25,20]
 database = 'ERA5' # 'ERA5' or 'E-OBS', default value is 'ERA5'
-datavar = 'wbgt' # 't2m', 'wbgt' or 'utci' for ERA5 ; 't2m' for 'E-OBS', default value is 't2m'
-daily_var = 'tx' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
+datavar = 't2m' # 't2m', 'wbgt' or 'utci' for ERA5 ; 't2m' for 'E-OBS', default value is 't2m'
+daily_var = 'tg' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
 year_beg = 1950 #beginning of the studied period, default 1950
 year_end = 2021 #end of the studied period, default 2021
 
 year_beg_climatology = 1950 #beginning of the climatology period, default 1950
 year_end_climatology = 2021 #end of the climatology period, default 2021
 
-anomaly = True #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
+anomaly = False #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
 
 nb_days = 4 #nb of days used as a heatwave duration threshold, default value is 4
-relative_threshold = True #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
+relative_threshold = False #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
 threshold_value = 95 # If relative_threshold is True, percentile used as a threshold for heatwave occurence, value in ]0;100[, default value is 95 (consistent with default value of relative_threshold). If absolute value, expected to be a value in °C.
 distrib_window_size = 15 #size (in days) of the temporal window that is used to compute the temperature distribution (on which is based the threshold) of each calendar day, default value is 15
 run_animation=False
@@ -43,15 +43,13 @@ threshold_NL = 1000 #threshold for testing non-linearity in population, in ppl/k
 coeff_PL = 1000 #coefficient for testing non linearity: grid points exceeding thershold_NL will be multiplied by coeff_PL, default 1000
 
 count_all_impacts=True
-#normalize_impact_country=False
-#normalize_impact_affected_region=False
 
 nb_top_events=10 #number of top detected events to look for in the litterature
 
-for datavar in ['t2m','wbgt','utci']:
+for datavar in ['t2m']:
     for daily_var in ['tx','tg','tn']:
-        for threshold_value in [95,90]:
-            for nb_days in [3,5] :
+        for threshold_value in [20,25]:
+            for nb_days in [3,4,5] :
                 if distrib_window_size%2==0:
                     raise ValueError('distrib_window_size is even. It has to be odd so the window can be centered on the computed day.')
                 if relative_threshold==False and anomaly==True:
@@ -102,16 +100,16 @@ for datavar in ['t2m','wbgt','utci']:
 
                 if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_{daily_var}",f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}",f"df_htws_detected{'_count_all_impacts'*count_all_impacts}_flex_time_{flex_time_span}days.xlsx"))==False :
                     print("\n Running create_heatwaves_indices_database... \n")
-                create_heatwaves_indices_database(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, threshold_NL=threshold_NL, coeff_PL=coeff_PL, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
+                    create_heatwaves_indices_database(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, threshold_NL=threshold_NL, coeff_PL=coeff_PL, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
 
                 if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_{daily_var}",f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}",f"df_scores{'_count_all_impacts'*(count_all_impacts)}_flex_time_span_{flex_time_span}_days.xlsx"))==False :
                     print("\n Running compute_heatwaves_indices_scores... \n")
-                compute_heatwaves_indices_scores(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
+                    compute_heatwaves_indices_scores(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
 
                 if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_{daily_var}",f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}",f"figs_flex_time_span_{flex_time_span}",f"distrib{'_count_all_impacts'*count_all_impacts}"))==False :
                     print("\n Running plot_heatwaves_distribution... \n")
-                plot_heatwaves_distribution(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
+                    plot_heatwaves_distribution(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
 
                 if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_{daily_var}",f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}",f"top_{nb_top_events}_events_overlap{'_count_all_impacts'*count_all_impacts}_flex_time_{flex_time_span}days.xlsx"))==False :
                     print("\n Running analysis_top_detected_events... \n")
-                analysis_top_detected_events(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts,nb_top_events=nb_top_events, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
+                    analysis_top_detected_events(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,count_all_impacts=count_all_impacts,nb_top_events=nb_top_events, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)

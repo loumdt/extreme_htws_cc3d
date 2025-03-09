@@ -139,32 +139,9 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
     f_pop_GHS_2015 = nc.Dataset(os.path.join(datadir,"Pop","GHS_POP",f"GHS_POP_2015_{database}_grid_Europe.nc"))
     f_pop_GHS_2020 = nc.Dataset(os.path.join(datadir,"Pop","GHS_POP",f"GHS_POP_2020_{database}_grid_Europe.nc"))
     
-    
-    #f_age_over65_worldpop_2000 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2001 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2002 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2003 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2004 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2005 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2006 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2007 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2000_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2008 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2005_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2009 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2010_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2010 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2015_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2011 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2005_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2012 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2010_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2013 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2015_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2014 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2005_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2015 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2010_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2016 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2015_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2017 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2005_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2018 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2010_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2019 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2015_{database}_grid_Europe.nc"))
-    #f_age_over65_worldpop_2020 = nc.Dataset(os.path.join(datadir,"Pop","WorldPop","over65",f"GHS_POP_2020_{database}_grid_Europe.nc"))
     #LOAD POPULATION FILES
     #Redirect the different years towards the correct (nearest in time) population data file :
     htw_year_to_pop_dict = {}
-    #htw_year_to_age_dict = {}
     for year in range(1950,1978):
         htw_year_to_pop_dict[year]=f_pop_GHS_1975
     for year in range(1978,1983):
@@ -191,18 +168,18 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
     df_htw = pd.read_excel(os.path.join(output_dir,f"df_htws_V0_detected_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}.xlsx"),header=0,index_col=0)
     df_emdat_not_merged = pd.read_excel(os.path.join(datadir,"GDIS_EM-DAT","EMDAT_Europe-1950-2022-heatwaves.xlsx"),header=0, index_col=0) #heatwaves are not merged by event, they are dissociated when affecting several countries
     df_emdat_merged = pd.read_excel(os.path.join(datadir,"GDIS_EM-DAT","EMDAT_Europe-1950-2022-heatwaves_merged.xlsx"),header=0, index_col=0) #heatwaves are merged by event number Dis No 
-    # #Read txt file containing detected heatwaves to create detected heatwaves list
+    # Read txt file containing detected heatwaves to create detected heatwaves list
     with open(os.path.join(output_dir,f"emdat_detected_heatwaves_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_{threshold_value}{name_dict_threshold[relative_threshold]}_flex_time_{flex_time_span}_days.txt"),'r') as f_txt:
         detected_htw_list = f_txt.readlines()
     f_txt.close()
-    # #Remove '\n' from strings
+    # Remove '\n' from strings
     emdat_to_meteo_db_id_dico_not_merged = {}
     emdat_heatwaves_list = []
     for i in range(len(detected_htw_list)) :
         emdat_to_meteo_db_id_dico_not_merged[detected_htw_list[i][:13]] = ast.literal_eval(detected_htw_list[i][14:-1])#Remove '\n' from strings
         emdat_heatwaves_list = np.append(emdat_heatwaves_list,emdat_to_meteo_db_id_dico_not_merged[detected_htw_list[i][:13]])
     emdat_heatwaves_list = [int(i) for i in np.unique(emdat_heatwaves_list)]
-    #Need to consider the possibility that several EM-DAT heatwaves are not distinguishable in meteo database
+    # Need to consider the possibility that several EM-DAT heatwaves are not distinguishable in CC3D identification
     htw_multi = []
     inverted_emdat_to_meteo_db_id_dico_not_merged = {}
     for htw,v in emdat_to_meteo_db_id_dico_not_merged.items() :
@@ -216,7 +193,7 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
         if len(inverted_emdat_to_meteo_db_id_dico_not_merged[k])>1:
             htw_multi.append(k)
     #--------------------------
-    #For all EM-DAT merged event, record every associated EM-DAT not merged heatwave (dico_merged_htw) that are detected in meteo database, and record every associated meteo database heatwave (dico_merged_label)
+    # For all EM-DAT merged event, record every associated EM-DAT not merged heatwave (dico_merged_htw) that are detected in meteo database, and record every associated meteo database heatwave (dico_merged_label)
     emdat_to_meteo_db_id_dico_merged_htw = {}
     emdat_to_meteo_db_id_dico_merged_label = {}
     for i in df_emdat_merged.index.values[:]:
@@ -259,7 +236,7 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
 
     cell_area = np.array([6371**2*np.cos(np.pi*lat_in/180)*res_lat*np.pi/180*res_lon*np.pi/180]*len(lon_in)).T # the area in km² of each cell, depending on the latitude
     cell_area_3d = np.array([cell_area]*92)
-    cell_area_3d_ratio = cell_area_3d/(6371**2*res_lat*np.pi/180*res_lon*np.pi/180) #each cell area as a percentage of the maximum possible cell area (obtained with lat=0°) in order to correctly weigh each cell when carrying out average
+    cell_area_3d_ratio = cell_area_3d/(6371**2*res_lat*np.pi/180*res_lon*np.pi/180) # each cell area as a percentage of the maximum possible cell area (obtained with lat=0°) in order to correctly weigh each cell when carrying out average
 
     gdp_time = f_gdp_cap.variables['time'][:]
 
@@ -281,10 +258,10 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
             vals = np.array(new_computed_htw)
             mask_htw = ~np.isin(data_label,vals)
             table_temp = f_temp.variables[datavar][(year-year_beg)*92:(year-year_beg+1)*92,:,:]
-            #table_temp = table_temp.data*(data_label == vals[:, None, None, None])[0].data
             table_temp = ma.masked_where(mask_htw+(land_sea_mask>0), table_temp)
+            if not table_temp.flags['WRITEABLE'] :
+                table_temp = np.copy(table_temp)
             table_HWMId = f_Russo_HWMId.variables['Russo_HWMId'][(year-year_beg)*92:(year-year_beg+1)*92,:,:]
-            #table_HWMId = table_HWMId.data*(data_label == vals[:, None, None, None])[0].data
             table_HWMId = ma.masked_where(mask_htw+(land_sea_mask>0), table_HWMId)
             pop0 = htw_year_to_pop_dict[year].variables['Band1'][:] #Population density
             pop = ma.array([pop0]*np.shape(table_temp)[0])
@@ -321,27 +298,17 @@ def create_heatwaves_indices_database(database='ERA5', datavar='t2m', daily_var=
             #Total affected population
             df_htw.loc[htw_id,'Total_affected_pop'] = affected_pop
             #
-            df_htw.loc[htw_id,'Multi_index_HWMId'] =  np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique)) #np.nansum((cell_area**2*table_HWMId*pop_unique))
+            df_htw.loc[htw_id,'Multi_index_HWMId'] =  np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique))
             #
-            df_htw.loc[htw_id,'Multi_index_temp'] =  np.nansum((cell_area_3d_ratio*table_temp*pop_unique)) #np.nansum((cell_area**2*table_temp*pop_unique))
+            df_htw.loc[htw_id,'Multi_index_temp'] =  np.nansum((cell_area_3d_ratio*table_temp*pop_unique)) 
             #
             df_htw.loc[htw_id,'Temp_sum_pop_NL'] = np.nansum(cell_area_3d_ratio*table_temp*coeff_PL*(pop_unique>threshold_NL))*np.nansum(pop_unique*cell_area*(pop_unique>threshold_NL))+np.nansum(cell_area_3d_ratio*table_temp*(pop_unique<=threshold_NL))*np.nansum(pop_unique*cell_area*(pop_unique<=threshold_NL))
             #Sum of HWMId index over the heatwave (time and space), multiplied by the normalized cell area
             df_htw.loc[htw_id,'Pseudo_HWMId_pop_NL'] = np.nansum(cell_area_3d_ratio*table_HWMId*coeff_PL*(pop_unique>threshold_NL))*np.nansum(pop_unique*cell_area*(pop_unique>threshold_NL))+np.nansum(cell_area_3d_ratio*table_HWMId*(pop_unique<=threshold_NL))*np.nansum(pop_unique*cell_area*(pop_unique<=threshold_NL))
             #
-            df_htw.loc[htw_id,'Multi_index_HWMId_NL'] = np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique*coeff_PL*(pop_unique>threshold_NL))) + np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique*(pop_unique<=threshold_NL))) #np.nansum((cell_area**2*table_HWMId*pop_unique*coeff_PL*(pop_unique>threshold_NL)) + (cell_area**2*table_HWMId*pop_unique*(pop_unique<=threshold_NL)))
+            df_htw.loc[htw_id,'Multi_index_HWMId_NL'] = np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique*coeff_PL*(pop_unique>threshold_NL))) + np.nansum((cell_area_3d_ratio*table_HWMId*pop_unique*(pop_unique<=threshold_NL)))
             #
-            df_htw.loc[htw_id,'Multi_index_temp_NL'] = np.nansum((cell_area_3d_ratio*table_temp*pop_unique*coeff_PL*(pop_unique>threshold_NL))) + np.nansum((cell_area_3d_ratio*table_temp*pop_unique*(pop_unique<=threshold_NL))) # np.nansum((cell_area**2*temp*pop_unique*coeff_PL*(pop_unique>threshold_NL)) + (cell_area**2*temp*pop_unique*(pop_unique<=threshold_NL)))
-            #
-            #df_htw.loc[htw_id,'Mean_log_GDP'] = -np.log10(np.nanmean(gdp_cap_map*pop0))
-            
-            #df_htw.loc[htw_id,'Mean_exp_GDP'] = np.exp(-np.nanmean(gdp_cap_map*pop0))
-            
-            #df_htw.loc[htw_id,'Mean_inv_GDP'] = 1/(np.nanmean(gdp_cap_map*pop0))
-            
-            #df_htw.loc[htw_id,'GDP_inv_log_temp_sum'] = (np.nansum((1/np.log10(gdp_cap_map))*table_temp*cell_area_3d_ratio))
-            
-            #df_htw.loc[htw_id,'GDP_inv_log_temp_mean'] = (np.nanmean((1/np.log10(gdp_cap_map))*pop0*table_temp*cell_area_3d_ratio))
+            df_htw.loc[htw_id,'Multi_index_temp_NL'] = np.nansum((cell_area_3d_ratio*table_temp*pop_unique*coeff_PL*(pop_unique>threshold_NL))) + np.nansum((cell_area_3d_ratio*table_temp*pop_unique*(pop_unique<=threshold_NL)))
       
             if htw_id in emdat_heatwaves_list :
                 df_htw.loc[htw_id,'Extreme_heatwave'] = True
@@ -430,10 +397,9 @@ def compute_heatwaves_indices_scores(database='ERA5', datavar='t2m', daily_var='
             extreme_bool_list = [int(df_htw.loc[i,'Extreme_heatwave']) for i in df_htw[df_htw['Computed_heatwave']==True].index.values[:]]
             if len(extreme_list_impact)>=2 and len(extreme_list_meteo)>=2 :
                 (slope,intercept,Rpearson,pvalue,stderr)=stats.linregress(extreme_list_impact, extreme_list_meteo, alternative='two-sided')
-                #Rpearson = stats.pearsonr(extreme_list_impact,extreme_list_meteo)
                 Rspearman = stats.spearmanr(extreme_list_impact,extreme_list_meteo)
                 Kendall_tau = stats.kendalltau(extreme_list_impact,extreme_list_meteo)
-                significance = ''+'*'*(pvalue<0.05)+'*'*(pvalue<0.01)+'*'*(pvalue<0.001) #''+'*'*(Rpearson[1]<0.05)+'*'*(Rpearson[1]<0.01)+'*'*(Rpearson[1]<0.001) 
+                significance = ''+'*'*(pvalue<0.05)+'*'*(pvalue<0.01)+'*'*(pvalue<0.001)
                 roc_auc = metrics.roc_auc_score(extreme_bool_list,meteo_list)
                 df_scores.loc[chosen_meteo,(chosen_impact,'r_pearson')] = str(np.round(Rpearson,6))+significance
                 df_scores.loc[chosen_meteo,(chosen_impact,'roc_auc')] = np.round(roc_auc,6)
@@ -443,7 +409,7 @@ def compute_heatwaves_indices_scores(database='ERA5', datavar='t2m', daily_var='
                 df_scores.loc[chosen_meteo,(chosen_impact,'Global_score_spearman')] = np.round(np.sqrt(np.abs(Rspearman[0]*roc_auc)),6)
                 df_scores.loc[chosen_meteo,(chosen_impact,'kendall_tau')] = np.round(Kendall_tau[0],6)
                 df_scores.loc[chosen_meteo,(chosen_impact,'Global_score_kendall')] = np.round(np.sqrt(np.abs(Kendall_tau[0]*roc_auc)),6)
-                #display roc_curve and correlation
+                # display roc_curve and correlation
                 if chosen_impact==impact_criteria[0] : #save this fig only once since it does not depend on the impact criterion
                     plt.close()
                     x=np.linspace(np.min(extreme_list_impact),np.max(extreme_list_impact),100)
@@ -454,7 +420,6 @@ def compute_heatwaves_indices_scores(database='ERA5', datavar='t2m', daily_var='
                     plt.ylabel(f"{chosen_meteo}")
                     plt.ylim([0.95*np.min(extreme_list_meteo),1.05*np.max(extreme_list_meteo)])
                     plt.title(f"Correlation between {chosen_meteo} and {chosen_impact}")
-                    #plt.legend()
                     plt.savefig(os.path.join(figs_output_dir,f"correlation_{chosen_meteo}.png"))
                     plt.close()
                     
@@ -549,25 +514,21 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
 
     clrs_dico = {"Total_Deaths": clrs.LogNorm(vmin=1, vmax=np.max(df_htw['Total_Deaths'])), "Total_Affected": clrs.Normalize(vmin=0, vmax=500), "Total_Damages": clrs.LogNorm(vmin=1, vmax=12120000) , "Impact_sum": clrs.LogNorm(vmin=1e4, vmax=np.max(df_htw['Impact_sum']))} #colormap depending on the selected criterion
 
-    #impact_criteria = ['TotalDeaths', 'Impact_fct']
-    #meteo_criteria = ['Global_mean','Spatial_extent','Duration','Max','Max_spatial','Temp_sum','Pseudo_HWMId','Pop_unique','Global_mean_pop','Duration_pop','Max_pop','Max_spatial_pop',
-    #'Spatial_extent_pop','Temp_sum_pop','Pseudo_HWMId_pop','Temp_sum_pop_NL','Pseudo_HWMId_pop_NL','Multi_index_temp','Multi_index_HWMId','Multi_index_temp_NL','Multi_index_HWMId_NL']
-
     df_emdat_not_merged = pd.read_excel(os.path.join(datadir,"GDIS_EM-DAT","EMDAT_Europe-1950-2022-heatwaves.xlsx"),header=0, index_col=0) #heatwaves are not merged by event, they are dissociated when affecting several countries
     df_emdat_merged = pd.read_excel(os.path.join(datadir,"GDIS_EM-DAT","EMDAT_Europe-1950-2022-heatwaves_merged.xlsx"),header=0, index_col=0) #heatwaves are merged by event number Dis No
     
-    # #Read txt file containing detected heatwaves to create detected heatwaves list
+    # Read txt file containing detected heatwaves to create detected heatwaves list
     with open(os.path.join(dataframe_dir,f"emdat_detected_heatwaves_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_{threshold_value}{name_dict_threshold[relative_threshold]}_flex_time_{flex_time_span}_days.txt"),'r') as f_txt:
         detected_htw_list = f_txt.readlines()
     f_txt.close()
-    # #Remove '\n' from strings
+    # Remove '\n' from strings
     emdat_to_era5_id_dico_not_merged = {}
     emdat_heatwaves_list = []
     for i in range(len(detected_htw_list)) :
         emdat_to_era5_id_dico_not_merged[detected_htw_list[i][:13]] = ast.literal_eval(detected_htw_list[i][14:-1])#Remove '\n' from strings
         emdat_heatwaves_list = np.append(emdat_heatwaves_list,emdat_to_era5_id_dico_not_merged[detected_htw_list[i][:13]])
     emdat_heatwaves_list = [int(i) for i in np.unique(emdat_heatwaves_list)]
-    #Need to consider the possibility that several EM-DAT heatwaves are not distinguishable in ERA5
+    # Need to consider the possibility that several EM-DAT heatwaves are not distinguishable in CC3D identification
     htw_multi = []
     inverted_emdat_to_era5_id_dico_not_merged = {}
     for htw,v in emdat_to_era5_id_dico_not_merged.items() :
@@ -580,7 +541,7 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
         inverted_emdat_to_era5_id_dico_not_merged[k]=[s for s in np.unique(inverted_emdat_to_era5_id_dico_not_merged[k])]
         if len(inverted_emdat_to_era5_id_dico_not_merged[k])>1:
             htw_multi.append(k)
-    #For all EM-DAT merged event, record every associated EM-DAT not merged heatwave (dico_merged_htw) that are detected in ERA5, and record every associated ERA5 heatwave (dico_merged_label)
+    # For all EM-DAT merged event, record every associated EM-DAT not merged heatwave (dico_merged_htw) that are detected in CC3D, and record every associated CC3D heatwave (dico_merged_label)
     emdat_to_era5_id_dico_merged_htw = {}
     emdat_to_era5_id_dico_merged_label = {}
     for i in df_emdat_merged.index.values[:]:
@@ -675,7 +636,6 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             meteo_list = [df_htw.loc[i,worst_scoring_index] for i in df_htw[df_htw['Computed_heatwave']==True].index.values[:]]
             min_val = np.min(meteo_list)
             max_val = np.max(meteo_list)
-            #print(worst_scoring_index,'min',np.min(meteo_list),'max',np.max(meteo_list))
             if dict_func[worst_scoring_index] == id_func :
                 Y,bins_edges=np.histogram(meteo_list,bins=np.linspace(start=min_val*min_boundary(min_val), stop=max_val*max_boundary(max_val), num=30)) #histogram of the E-OBS heatwaves distribution
             elif dict_func[worst_scoring_index] == np.log10 :
@@ -685,14 +645,11 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             for k in range(len(Y)) :
                 X[k]=(bins_edges[k+1]+bins_edges[k])/2
             Y=np.array(Y)
-            Y2=signal.savgol_filter(Y, 9,3)#savgol_window_dico[chosen_meteo], 3) #smooth the histogram edges with a savitzky-golay filter
+            Y2=signal.savgol_filter(Y, 9,3) # smooth the histogram edges with a savitzky-golay filter
             if dict_func[worst_scoring_index] == (id_func) : 
-            #    plt.plot(X,Y,'ko')
                 ax1.plot(X,Y2,'r-')
             elif dict_func[worst_scoring_index] == np.log10: #have to plot on semilog scale for these criteria
-            #    plt.semilogx(X,Y,'ko')
                 ax1.semilogx(X,Y2,'r-')
-            #plt.plot(X,Y,'ko')
             ax1.set_ylim([-1,45])
             ax1.set_xlim([min_val*min_boundary(min_val),max_val*max_boundary(max_val)])
             ax1.axvline(np.percentile(meteo_list,25),linewidth=2) #add 1st quartile of the meteo criterion list
@@ -703,6 +660,7 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             ax1.set_xlabel(worst_scoring_index, fontsize = 20) # X label
             ax1.tick_params(axis='both', which='major', labelsize=20)
             plt.text(.7, .9, 'Worst', ha='left', va='top', fontsize=30, transform=ax1.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
+
             for k in range(len(scatter_list_meteo)):
                 closest_x = min(range(len(X)), key=lambda i: abs(X[i]-scatter_list_meteo[k]))
                 CS1 = ax1.scatter(np.linspace(scatter_list_meteo[k],scatter_list_meteo[k],1000),np.linspace(0,Y2[closest_x],1000),c=[scatter_list_impact[k]]*1000,edgecolor=None, cmap = 'YlOrRd',norm=clrs_dico[chosen_impact],linewidths=4)
@@ -720,14 +678,11 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             for k in range(len(Y)) :
                 X[k]=(bins_edges[k+1]+bins_edges[k])/2
             Y=np.array(Y)
-            Y2=signal.savgol_filter(Y, 9,3)#savgol_window_dico[best_scoring_index], 3) #smooth the histogram edges with a savitzky-golay filter
+            Y2=signal.savgol_filter(Y, 9,3) # smooth the histogram edges with a savitzky-golay filter
             if dict_func[best_scoring_index] == (id_func) : 
-            #    plt.plot(X,Y,'ko')
                 ax2.plot(X,Y2,'r-')
             elif dict_func[best_scoring_index] == np.log10: #have to plot on semilog scale for these criteria
-            #    plt.semilogx(X,Y,'ko')
                 ax2.semilogx(X,Y2,'r-')
-            #plt.plot(X,Y,'ko')
             ax2.set_ylim([-1,45])
             ax2.set_xlim([min_val*min_boundary(min_val),max_val*max_boundary(max_val)])
             ax2.axvline(np.percentile(meteo_list,25),linewidth=2) #add 1st quartile of the meteo criterion list
@@ -738,9 +693,11 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             ax2.set_xlabel(best_scoring_index, fontsize = 20) # X label
             ax2.tick_params(axis='both', which='major', labelsize=20)
             plt.text(.2, .9, 'Best', ha='left', va='top', fontsize=30, transform=ax2.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
+            
             for k in range(len(scatter_list_meteo)):
                 closest_x = min(range(len(X)), key=lambda i: abs(X[i]-scatter_list_meteo[k]))
                 CS2 = ax2.scatter(np.linspace(scatter_list_meteo[k],scatter_list_meteo[k],1000),np.linspace(0,Y2[closest_x],1000),c=[scatter_list_impact[k]]*1000,edgecolor=None, cmap = 'YlOrRd',norm=clrs_dico[chosen_impact],linewidths=4)
+            
             cax = plt.axes([0.92, 0.12, 0.02, 0.75])
             cbar = f.colorbar(CS2, cax=cax, orientation='vertical')#,location='right')
             cbar.ax.tick_params(labelsize=20)
@@ -773,7 +730,7 @@ def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg',
     
     resolution_dict = {"ERA5" : "0.25", "E-OBS" : "0.1"}
     resolution = resolution_dict[database]
-    #Link databse country names format to netCDF mask country names format
+    # Link databse country names format to netCDF mask country names format
     country_dict = {'Albania':'Albania', 'Austria':'Austria', 'Belarus':'Belarus',
                     'Belgium':'Belgium', 'Bosnia and Herzegovina':'Bosnia_and_Herzegovina',
                     'Bulgaria':'Bulgaria', 'Canary Is':None, 'Croatia':'Croatia', 'Cyprus':'Cyprus', 
@@ -838,7 +795,7 @@ def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg',
     
     if len(df_htw)>0 :
         df_htw = df_htw[df_htw['Computed_heatwave']==True]
-        df_htw = df_htw[np.isnan(df_htw['Total_Deaths'])]#we study top events that are not recorded in EM-DAT
+        df_htw = df_htw[np.isnan(df_htw['Total_Deaths'])] # we study top events that are not recorded in EM-DAT
         top_events_id = np.sort(df_htw.sort_values(by=best_scoring_index).index[-nb_top_events:])
         df_htw = df_htw[df_htw.index.isin(top_events_id)]
         ranks = df_htw[best_scoring_index].rank(ascending=False)
@@ -851,7 +808,7 @@ def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg',
         country_labels = np.zeros((92,len(lat_in),len(lon_in)),dtype=int)
         for ctry in dict_country_labels.keys():
             mask_file = nc.Dataset(os.path.join(datadir,database,"Mask",f"Mask_{ctry}_{database}_{resolution}deg.nc"),mode='r')
-            country_labels=np.maximum(country_labels,[~np.array(mask_file.variables['mask'][:],dtype=bool)*dict_country_labels[ctry]]*92) #assign a country label to each point of the map. np.maximum() is used to avoid the superposition of labels : a few pixels are assigned to several countries.
+            country_labels=np.maximum(country_labels,[~np.array(mask_file.variables['mask'][:],dtype=bool)*dict_country_labels[ctry]]*92) # assign a country label to each point of the map. np.maximum() is used to avoid the superposition of labels : a few pixels are assigned to several countries.
         overlap_list_dict = {}
         affected_countries_labels_dict = {}
 
@@ -859,8 +816,8 @@ def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg',
         
         for htw_id in tqdm(df_htw.index) :
             year_event = df_htw.loc[htw_id,'Year']
-            start_date_idx_all_year = df_htw.loc[htw_id,'idx_beg_all_year']#idx_beg_all_year
-            end_date_idx_all_year = df_htw.loc[htw_id,'idx_end_all_year']#idx_end_all_year
+            start_date_idx_all_year = df_htw.loc[htw_id,'idx_beg_all_year']
+            end_date_idx_all_year = df_htw.loc[htw_id,'idx_end_all_year']
             
             overlap_list = []
             labels_cc3d = f_label.variables['label'][(year_event-year_beg)*92:(year_event-year_beg+1)*92,:,:] #load all JJA label data for the given year
