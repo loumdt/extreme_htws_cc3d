@@ -20,6 +20,8 @@ Code/ERA5_use/*
 
 Output/*
 !Output/summary_detection_overlap_sensitivity.xlsx
+Output/ERA5/*
+Outpiut/E-OBS/*
 Mask/*.png
 .mask_env/*
 .dev_juicce/*
@@ -29,5 +31,3 @@ ffmpeg.exe
 *.png
 animation_backup
 docs/*
-
-runs_needed.txt
