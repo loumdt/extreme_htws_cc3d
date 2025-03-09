@@ -19,7 +19,7 @@ Code/E-OBS_use/*
 Code/ERA5_use/*
 
 Output/*
-!summary_detection_overlap_sensitivity.xlsx
+!Output/summary_detection_overlap_sensitivity.xlsx
 Mask/*.png
 .mask_env/*
 .dev_juicce/*
