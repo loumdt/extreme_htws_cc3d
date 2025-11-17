@@ -501,19 +501,138 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
     return
 
-def record_best_score(write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=False,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3) :
-    # Load heatwaves indices database					
+def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg', year_beg=1950, year_end=2021, threshold_value=95, year_beg_climatology=1950, year_end_climatology=2021, distrib_window_size=15,nb_days=4,flex_time_span=7,nb_top_events=30,best_scoring_index='Multi_index_HWMId',count_all_impacts=True, anomaly=True, relative_threshold=True):
+    '''This function is used to search for the top detected heatwaves in an alternate impact database.'''
+    
+    print('database :',database)
+    print('datavar :',datavar)
+    print('daily_var :',daily_var)
+    print('year_beg :',year_beg)
+    print('year_end :',year_end)
+    print('threshold_value :',threshold_value)
+    print('year_beg_climatology :',year_beg_climatology)
+    print('year_end_climatology :',year_end_climatology)
+    print('nb_days :',nb_days)
+    print('nb_top_events :',nb_top_events)
+    
+    if os.name == 'posix' :
+        datadir = "Data/"
+    else : 
+        datadir = os.environ["DATADIR"]
+    
+    name_dict_anomaly = {True : 'anomaly', False : 'absolute'}
+    name_dict_threshold = {True : 'th', False : 'C'}
+    
+    resolution_dict = {"ERA5" : "0.25", "E-OBS" : "0.1"}
+    resolution = resolution_dict[database]
+    # Link databse country names format to netCDF mask country names format
+    country_dict = {'Albania':'Albania', 'Austria':'Austria', 'Belarus':'Belarus',
+                    'Belgium':'Belgium', 'Bosnia and Herzegovina':'Bosnia_and_Herzegovina',
+                    'Bulgaria':'Bulgaria', 'Canary Is':None, 'Croatia':'Croatia', 'Cyprus':'Cyprus', 
+                    'Czech Republic (the)':'Czechia', 'Denmark':'Denmark', 'Estonia':'Estonia', 
+                    'Finland':'Finland', 'France':'France', 'Germany':'Germany', 'Greece':'Greece', 
+                    'Hungary':'Hungary', 'Iceland':'Iceland', 'Ireland':'Ireland', 
+                    'Italy':'Italy', 'Latvia':'Latvia', 'Lithuania':'Lithuania',
+                    'Luxembourg':'Luxembourg', 'Montenegro':'Montenegro',
+                    'Macedonia (the former Yugoslav Republic of)':'Macedonia',
+                    'Moldova':'Moldova', 'Netherlands (the)':'Netherlands', 'Norway':'Norway', 
+                    'Poland':'Poland','Portugal':'Portugal', 'Romania':'Romania',
+                    'Russian Federation (the)':'Russia', 'Serbia':'Serbia', 
+                    'Serbia Montenegro':'Serbia', #The corresponding heatwave happened in Serbia, cf 'Location' data of EM-DAT
+                    'Slovakia':'Slovakia', 'Slovenia':'Slovenia', 'Spain':'Spain', 'Sweden':'Sweden',
+                    'Switzerland':'Switzerland', 'Turkey':'Turkey',
+                    'United Kingdom of Great Britain and Northern Ireland (the)':'United_Kingdom',
+                    'Ukraine':'Ukraine','Yugoslavia':'Serbia',#The corresponding heatwave happened in Serbia, cf 'Location' data of EM-DAT
+                    'England':'United_Kingdom','England and Wales':'United_Kingdom','Czech Republic':'Czechia'} 
+    
+    dict_country_labels = {'Albania': 1, 'Austria': 2, 'Belarus': 3, 'Belgium': 4, 'Bosnia_and_Herzegovina': 5, 
+                           'Bulgaria': 6, 'Croatia': 7, 'Cyprus': 8, 'Czechia': 9, 'Denmark': 10, 'Estonia': 11, 
+                           'Finland': 12, 'France': 13, 'Germany': 14, 'Greece': 15, 'Hungary': 16, 'Iceland': 17, 
+                           'Ireland': 18, 'Italy': 19, 'Latvia': 20, 'Lithuania': 21, 'Luxembourg': 22, 
+                           'Montenegro': 23, 'Macedonia': 24, 'Moldova': 25, 'Netherlands': 26, 'Norway': 27, 
+                           'Poland': 28, 'Portugal': 29, 'Romania': 30, 'Russia': 31, 'Serbia': 32, 'Slovakia': 33, 
+                           'Slovenia': 34, 'Spain': 35, 'Sweden': 36, 'Switzerland': 37, 'Turkey': 38, 
+                           'United_Kingdom': 39, 'Ukraine': 40}
+    
+    inv_dict_country_labels = {v: k for k, v in dict_country_labels.items()}
+    
+    
+    
+    output_dir_df = os.path.join("Output",database,f"{datavar}_{daily_var}" ,
+                            f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}")
+    try :
+        df_htw = pd.read_excel(os.path.join(output_dir_df,f"df_htws_detected{'_count_all_impacts'*count_all_impacts}_flex_time_{flex_time_span}days.xlsx"), header=0, index_col=0)
+    except :
+        return
+    df_impact_alternate = pd.read_excel(os.path.join(datadir,"GDIS_EM-DAT","Lucy_Hammond_ETE_data_V2.xlsx"), header=0, index_col=0)
+    df_impact_alternate = df_impact_alternate[df_impact_alternate['Country'].isin(country_dict.keys())]
 
-    df_best_scores = pd.read_csv(join(write_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
-    df_scores = pd.read_csv(join(write_directory,f"df_scores.csv"),header=0, index_col=0)
+    df_scores = pd.read_excel(os.path.join(output_dir_df,f"df_scores{'_count_all_impacts'*(count_all_impacts)}_flex_time_span_{flex_time_span}_days.xlsx"),index_col=0,header=[0,1])
+    try :
+        best_scoring_index = df_scores[df_scores[('Total_Deaths','Global_score')]==np.nanmax(df_scores[('Total_Deaths','Global_score')])].index.values[0]
+    except :
+        pass
+    database_stats = pd.read_excel(os.path.join("Output","summary_detection_overlap_sensitivity.xlsx"),index_col=0,header=0)
+    get_index = database_stats[(database_stats['database']==database)&(database_stats['datavar']==datavar)&(database_stats['daily_var']==daily_var)&(database_stats['year_beg']==year_beg)&(database_stats['year_end']==year_end)&(database_stats['year_beg_climatology']==year_beg_climatology)&(database_stats['year_end_climatology']==year_end_climatology)&(database_stats['anomaly']==anomaly)&(database_stats['nb_days']==nb_days)&(database_stats['relative_threshold']==relative_threshold)&(database_stats['threshold_value']==threshold_value)&(database_stats['distrib_window_size']==distrib_window_size)&(database_stats['flex_time_span']==flex_time_span)&(database_stats['count_all_impacts']==count_all_impacts)].index.values[0]
+    with open(os.path.join(output_dir_df,f"emdat_undetected_heatwaves_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_{threshold_value}{name_dict_threshold[relative_threshold]}_flex_time_{flex_time_span}_days.txt"),'r') as f_txt:
+        undetected_htw_list = f_txt.readlines()
+    f_txt.close()
+    database_stats.loc[get_index,'nb_detected_htws'] = len(df_htw)
+    database_stats.loc[get_index,'emdat_undetected_htws'] = len(undetected_htw_list)
+    try :
+        database_stats.loc[get_index,'best_score'] = df_scores.loc[best_scoring_index,('Total_Deaths','Global_score')]
+        database_stats.loc[get_index,'best_index'] = best_scoring_index.replace('Russo','HWMId')
+    except :
+        pass
+    if np.isnan(database_stats.loc[get_index,'best_score']) :
+        database_stats.loc[get_index,'best_index'] = None
+    database_stats.to_excel(os.path.join("Output","summary_detection_overlap_sensitivity.xlsx"))
+    
+    if len(df_htw)>0 :
+        df_htw = df_htw[df_htw['Computed_heatwave']==True]
+        df_htw = df_htw[np.isnan(df_htw['Total_Deaths'])] # we study top events that are not recorded in EM-DAT
+        top_events_id = np.sort(df_htw.sort_values(by=best_scoring_index).index[-nb_top_events:])
+        df_htw = df_htw[df_htw.index.isin(top_events_id)]
+        ranks = df_htw[best_scoring_index].rank(ascending=False)
+        nc_file_label = os.path.join(datadir,database,datavar,"Detection_Heatwave",f"detected_heatwaves_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}.nc")
+        f_label=nc.Dataset(nc_file_label,mode='r')
 
-    df_scores = df_scores.loc[["Mean","HWMId_sum","Affected population","HWMId_pop"]]
+        lat_in = f_label.variables['lat'][:]
+        lon_in = f_label.variables['lon'][:]
 
-    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)].index.values[0]
+        country_labels = np.zeros((92,len(lat_in),len(lon_in)),dtype=int)
+        for ctry in dict_country_labels.keys():
+            mask_file = nc.Dataset(os.path.join(datadir,database,"Mask",f"Mask_{ctry}_{database}_{resolution}deg.nc"),mode='r')
+            country_labels=np.maximum(country_labels,[~np.array(mask_file.variables['mask'][:],dtype=bool)*dict_country_labels[ctry]]*92) # assign a country label to each point of the map. np.maximum() is used to avoid the superposition of labels : a few pixels are assigned to several countries.
+        overlap_list_dict = {}
+        affected_countries_labels_dict = {}
 
-
-    df_best_scores.loc[get_index,"nb_detected_htws"] = 0
-    df_best_scores.loc[get_index,"nb_overlap_htws"] = 0
-    df_best_scores.loc[get_index,"best_auc_roc"] = df_best_scores["AUC ROC"].idxmax()
-    df_best_scores.loc[get_index,"best_pearson_R"] = df_best_scores["R Pearson"].idxmax()
-    df_best_scores.to_csv(join(write_directory,"summary_detection_overlap_sensitivity.csv"))
+        output_overlap_df = pd.DataFrame(columns=['detected_rank','Year','idx_beg_JJA','idx_end_JJA','idx_beg_all_year','idx_end_all_year','detected_start_date','detected_end_date','detected_affected_countries','Hammond_htw_indices','Hammond_affected_countries','Hammond_deaths'],index=None,data=None)
+        
+        for htw_id in tqdm(df_htw.index) :
+            year_event = df_htw.loc[htw_id,'Year']
+            start_date_idx_all_year = df_htw.loc[htw_id,'idx_beg_all_year']
+            end_date_idx_all_year = df_htw.loc[htw_id,'idx_end_all_year']
+            
+            overlap_list = []
+            labels_cc3d = f_label.variables['label'][(year_event-year_beg)*92:(year_event-year_beg+1)*92,:,:] #load all JJA label data for the given year
+            
+            for impact_idx in df_impact_alternate.index :
+                idx_beg_impact = (df_impact_alternate.loc[impact_idx,'Start date'].date() - date(year_beg,1,1)).days
+                idx_end_impact = (df_impact_alternate.loc[impact_idx,'End date'].date() - date(year_beg,1,1)).days
+                if ((start_date_idx_all_year>=idx_beg_impact and start_date_idx_all_year<=idx_end_impact) or (end_date_idx_all_year>=idx_beg_impact and end_date_idx_all_year<=idx_end_impact)) or ((idx_beg_impact>=start_date_idx_all_year and idx_beg_impact<=end_date_idx_all_year) or (idx_end_impact>=start_date_idx_all_year and idx_end_impact<=end_date_idx_all_year)) :
+                    f_mask = nc.Dataset(os.path.join(datadir, database,"Mask",f"Mask_{country_dict[df_impact_alternate.loc[impact_idx,'Country']]}_{database}_{resolution}deg.nc"),mode='r')
+                    mask_country = f_mask.variables['mask'][:]
+                    if np.any(ma.masked_where([mask_country]*92,(labels_cc3d==htw_id))) : #if there is also a spatial overlap (check only at the country level).
+                        overlap_list.append(impact_idx)
+            overlap_list_dict[htw_id]=overlap_list
+            affected_countries_labels_dict[htw_id] = [int(val) for val in np.unique((ma.filled(labels_cc3d,fill_value=0)==htw_id)*country_labels)[1:]] #ignore value 0
+            hammond_affected_countries = [df_impact_alternate.loc[index,'Country'] for index in overlap_list]
+            hammond_deaths = np.sum([df_impact_alternate.loc[index,'Deaths'] for index in overlap_list])
+            output_overlap_df.loc[htw_id]=[int(ranks.loc[htw_id]),year_event,df_htw.loc[htw_id,'idx_beg_JJA'],df_htw.loc[htw_id,'idx_end_JJA'],start_date_idx_all_year,end_date_idx_all_year,date(year_beg,1,1)+timedelta(days=int(start_date_idx_all_year)),date(year_beg,1,1)+timedelta(days=int(end_date_idx_all_year)),[inv_dict_country_labels[country] for country in affected_countries_labels_dict[htw_id]],overlap_list,hammond_affected_countries,hammond_deaths]
+            
+    else :
+        output_overlap_df = pd.DataFrame(columns=['detected_rank','Year','idx_beg_JJA','idx_end_JJA','idx_beg_all_year','idx_end_all_year','detected_start_date','detected_end_date','detected_affected_countries','Hammond_htw_indices','Hammond_affected_countries','Hammond_deaths'],index=None,data=None)
+    
+    output_overlap_df.to_excel(os.path.join(output_dir_df,f"top_{nb_top_events}_events_overlap{'_count_all_impacts'*count_all_impacts}_flex_time_{flex_time_span}days.xlsx"))
+    return
