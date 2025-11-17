@@ -41,7 +41,7 @@ def compute_climatology_smooth(database='ERA5', datavar='t2m', daily_var='tg', y
 
     temp_name_dict = {'tg':'mean','tx':'max','tn':'min'}
     resolution_dict = {"ERA5" : "0.25", "E-OBS" : "0.1"}
-    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)'}
+    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)', 'wbgt_simple':'Wet Bulb Globe Temperature Simple'}
     resolution = resolution_dict[database]
     # Load netcdf temperature (or climate comfort index) data file :
     nc_in_path = os.path.join(datadir,database,datavar,f"{database}_{datavar}_{daily_var}_Europe_day_{resolution}deg_{year_beg}-{year_end}.nc") # path to netCDF data file
@@ -144,7 +144,7 @@ def compute_climatology_smooth(database='ERA5', datavar='t2m', daily_var='tg', y
             val_table[j]=extended_temp[i+j,:,:]
         val_table[:] = ma.masked_outside(val_table[:],-300,400)
         output_var[i-366,:,:] = np.nanmean(val_table[:],axis=0)
-    output_var[:]=ma.masked_outside(output_var[:],-300,400)
+        output_var[i-366,:,:]=ma.masked_outside(output_var[i-366,:,:],-300,400)
 
     f.close()
     nc_file_out.close()
@@ -347,7 +347,7 @@ def select_scale_jja(database='ERA5', datavar='t2m', daily_var='tg', year_beg=19
     name_dict_threshold = {True : 'th', False : 'C'}
     
     temp_name_dict = {'tg':'mean','tx':'max','tn':'min'}
-    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)'}
+    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)', 'wbgt_simple':'Wet Bulb Globe Temperature Simple'}
     resolution_dict = {"ERA5" : "0.25", "E-OBS" : "0.1"}
     resolution = resolution_dict[database]
     #-------------------------------------
@@ -433,7 +433,7 @@ def select_scale_jja(database='ERA5', datavar='t2m', daily_var='tg', year_beg=19
         f_threshold = nc.Dataset(f_threshold_name, mode='r')
         threshold_table = f_threshold.variables['threshold'][:]
         threshold_table=ma.masked_outside(threshold_table[152:244,:,:],-300,400) #threshold of n-th (default 95th) temperature anomaly (or absolute temperature) percentile for every day of JJA and location
-    elif datavar=="utci" or (database=="ERA5" and datavar=="t2m") :
+    elif datavar=="utci" or datavar=="wbgt_simple" or (database=="ERA5" and datavar=="t2m") :
         threshold_table = threshold_value+273.15 #in this case, threshold_table is only a scalar, add 273.15 because data is in K
     else :
         threshold_table = threshold_value #in this case, threshold_table is only a scalar
@@ -516,7 +516,7 @@ def detect_potential_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', y
     name_dict_threshold = {True : 'th', False : 'C'}
     
     temp_name_dict = {'tg':'mean','tx':'max','tn':'min'}
-    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)'}
+    long_name_dict = {'utci' : 'Universal Thermal Climate Index', 't2m' : '2 meters temperature', 'wbgt':'Wet Bulb Globe Temperature (Brimicombe et al., 2023)', 'wbgt_simple':'Wet Bulb Globe Temperature Simple'}
     resolution_dict = {"ERA5" : "0.25", "E-OBS" : "0.1"}
     resolution = resolution_dict[database]
     
@@ -597,11 +597,12 @@ def detect_potential_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', y
             date_format[year*92+day] = nc.stringtochar(np.array([calendar[year,day]], 'S10'))
             date_idx[year*92+day]=year*92+day
         output_var[year*92:(year+1)*92,:,:]=stack_temp[:,:,:]
-    output_var[:] = ma.masked_outside(output_var[:],-300,400)
+        output_var[year*92:(year+1)*92,:,:] = ma.masked_outside(output_var[year*92:(year+1)*92,:,:],-300,400)
     time[:]=range(np.shape(output_var)[0])
 
     f.close()
     nc_file_out.close()
+    return
     
 #%%
 def cc3d_scan_heatwaves(database='ERA5', datavar='t2m', daily_var='tg', year_beg=1950, year_end=2021, threshold_value=95, year_beg_climatology=1950, year_end_climatology=2021, distrib_window_size=15,nb_days=4,run_animation=True, anomaly=True, relative_threshold=True):

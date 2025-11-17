@@ -628,7 +628,7 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
                 
             try :
                 best_scoring_index = df_scores[df_scores[('Total_Deaths','Global_score')]==np.nanmax(df_scores[('Total_Deaths','Global_score')])].index.values[0]
-                worst_scoring_index = df_scores[df_scores[('Total_Deaths','Global_score')]==np.nanmin(df_scores[('Total_Deaths','Global_score')])].index.values[0]
+                worst_scoring_index = "Global_mean"#df_scores[df_scores[('Total_Deaths','Global_score')]==np.nanmin(df_scores[('Total_Deaths','Global_score')])].index.values[0]
             except :
                 pass
             f, (ax1, ax2) = plt.subplots(2, 1, figsize=(16,12))
@@ -659,7 +659,8 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             ax1.set_ylabel("Frequency", fontsize = 20.0) # Y label
             ax1.set_xlabel(worst_scoring_index, fontsize = 20) # X label
             ax1.tick_params(axis='both', which='major', labelsize=20)
-            plt.text(.7, .9, 'Worst', ha='left', va='top', fontsize=30, transform=ax1.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
+            #plt.text(.7, .9, 'Worst', ha='left', va='top', fontsize=30, transform=ax1.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
+            #plt.text(.2 , .9, 'Worst', ha='left', va='top', fontsize=30, transform=ax2.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
 
             for k in range(len(scatter_list_meteo)):
                 closest_x = min(range(len(X)), key=lambda i: abs(X[i]-scatter_list_meteo[k]))
@@ -692,7 +693,7 @@ def plot_heatwaves_distribution(database='ERA5', datavar='t2m', daily_var='tg', 
             ax2.set_ylabel("Frequency", fontsize = 20.0) # Y label
             ax2.set_xlabel(best_scoring_index, fontsize = 20) # X label
             ax2.tick_params(axis='both', which='major', labelsize=20)
-            plt.text(.2, .9, 'Best', ha='left', va='top', fontsize=30, transform=ax2.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
+            #plt.text(.2, .9, 'Best', ha='left', va='top', fontsize=30, transform=ax2.transAxes,bbox=dict(boxstyle="round", ec=(0.0, 0.0, 0.0), fc=(1., 1, 1)))
             
             for k in range(len(scatter_list_meteo)):
                 closest_x = min(range(len(X)), key=lambda i: abs(X[i]-scatter_list_meteo[k]))

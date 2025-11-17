@@ -15,18 +15,18 @@ from analysis_classification_plot_functions import *
 # utci absolute thresholds : [26,32,38,46]
 # t2m absolute thresholds : [25,20]
 database = 'ERA5' # 'ERA5' or 'E-OBS', default value is 'ERA5'
-datavar = 't2m' # 't2m', 'wbgt' or 'utci' for ERA5 ; 't2m' for 'E-OBS', default value is 't2m'
+datavar = 'wbgt_simple' # 't2m', 'wbgt' or 'utci' for ERA5 ; 't2m' for 'E-OBS', default value is 't2m'
 daily_var = 'tg' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
-year_beg = 1950 #beginning of the studied period, default 1950
-year_end = 2021 #end of the studied period, default 2021
+year_beg = 1950 # beginning of the studied period, default 1950
+year_end = 2021 # end of the studied period, default 2021
 
 year_beg_climatology = 1950 #beginning of the climatology period, default 1950
 year_end_climatology = 2021 #end of the climatology period, default 2021
 
-anomaly = False #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
+anomaly = True #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
 
-nb_days = 4 #nb of days used as a heatwave duration threshold, default value is 4
-relative_threshold = False #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
+nb_days = 5 #nb of days used as a heatwave duration threshold, default value is 4
+relative_threshold = True #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
 threshold_value = 95 # If relative_threshold is True, percentile used as a threshold for heatwave occurence, value in ]0;100[, default value is 95 (consistent with default value of relative_threshold). If absolute value, expected to be a value in °C.
 distrib_window_size = 15 #size (in days) of the temporal window that is used to compute the temperature distribution (on which is based the threshold) of each calendar day, default value is 15
 run_animation=False
@@ -42,7 +42,7 @@ resolution = resolution_dict[database]
 threshold_NL = 1000 #threshold for testing non-linearity in population, in ppl/km², default 1000
 coeff_PL = 1000 #coefficient for testing non linearity: grid points exceeding thershold_NL will be multiplied by coeff_PL, default 1000
 
-count_all_impacts=True
+count_all_impacts=False
 
 nb_top_events=10 #number of top detected events to look for in the litterature
 
@@ -82,7 +82,7 @@ if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_
 
 if overwrite_files or os.path.exists(os.path.join("Output",database,f"{datavar}_{daily_var}",f"{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_JJA_{nb_days}days_before_scan_{year_beg}_{year_end}_{threshold_value}{name_dict_threshold[relative_threshold]}_{distrib_window_size}days_window_climatology_{year_beg_climatology}_{year_end_climatology}",f"maps_undetected_htws_flex_{flex_time_span}_ds"))==False :
     print("\n Running undetected_heatwaves_animation... \n")
-    undetected_heatwaves_animation(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size, nb_days=nb_days, flex_time_span=flex_time_span, anomaly=anomaly, relative_threshold=relative_threshold)
+    #undetected_heatwaves_animation(database=database, datavar=datavar, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size, nb_days=nb_days, flex_time_span=flex_time_span, anomaly=anomaly, relative_threshold=relative_threshold)
 
 #compute 25th and 75th distribution percentile for Russo_HWMId calculation.
 if overwrite_files or os.path.exists(os.path.join(datadir,database,datavar,f"distrib_{database}_{datavar}_{daily_var}_{name_dict_anomaly[anomaly]}_{year_beg_climatology}_{year_end_climatology}_{25}th_threshold_{distrib_window_size}days.nc"))==False :
