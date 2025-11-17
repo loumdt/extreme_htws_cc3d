@@ -5,13 +5,10 @@ Data/ERA5/t2m/*
 Data/ERA5/wbgt/*
 Data/ERA5/utci/*
 Data/ERA5/wbgt_simple/*
-Data/GDIS_EM-DAT/*
-!Data/GDIS_EM-DAT/EMDAT_Europe-1950-2022-heatwaves.xlsx
-!Data/GDIS_EM-DAT/Lucy_Hammond_ETE_data_V2.xlsx
+!Data/EM-DAT/EMDAT_Europe-1950-2022-heatwaves.xlsx
+!Data/EM-DAT/Lucy_Hammond_ETE_data_V2.xlsx
 !Data/Dates_converter.xlsx
-Data/Pop/GHSL_Data_Package_2022.pdf
-Data/UNDP/*
-
+test.pdf
 Code/Mask/*.png
 Code/compute_wbgts.py
 Code/dev.ipynb
@@ -20,7 +17,6 @@ Mask/*.png
 .mask_env/*
 .dev_juicce/*
 .cdsapi_env/*
-idees.txt
 *.mp4
 ffmpeg.exe
 *.png
@@ -29,8 +25,4 @@ docs/*
 !Data/EM-DAT/EMDAT_Europe_Turkey-1975-2021-heatwaves
 Data/EM-DAT/*
 
-Data/ERA5/t2m
-Data/ERA5/utci
-Data/ERA5/wbgt
-Data/ERA5/wbgt_simple
 Data/*/*.nc
