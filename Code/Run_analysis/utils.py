@@ -10,7 +10,6 @@ import matplotlib.colors as clrs
 from scipy import stats
 from sklearn import metrics
 import cftime
-from ast import literal_eval
 
 def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m',smooth_span=15) :
     '''This function computes a climatology for each calendar day of the year. The seasonal cycle is then smoothed with a 31-day window. 
@@ -168,6 +167,9 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
         # Update N_labels
         N_labels += N_added
 
+    labels_list = np.unique(label.data)
+    labels_list = labels_list[np.where(labels_list!=0)]
+    print(len(labels_list),"heatwaves detected")
     # Set DataArray to Dataset to set variable name
     label = label.to_dataset(name="label")
     # Save to netCDF 
@@ -180,7 +182,6 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     threshold.close()
     if anomaly :
         climatology.close()
-    print(N_labels,"heatwaves detected")
     return
 
 def remove_outside_heatwaves(read_directory,labels,dust_threshold=775) :
@@ -423,7 +424,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         roc_auc = metrics.roc_auc_score((df_htws['EM-DAT heatwaves'].map(len)>1).values,df_htws.loc[:,index])
         df_scores.loc[index,'R Pearson'] = np.round(correlation.rvalue,6)
         df_scores.loc[index,'p-value'] = np.round(correlation.pvalue,6)
-        df_scores.loc[index,'significance'] = ''+'*'*(correlation.pvalue<0.05)+'*'*(correlation.pvalue<0.01)+'*'*(correlation.pvalue<0.001)
+        df_scores.loc[index,'significance'] = ''+'*'*(float(correlation.pvalue)<0.05)+'*'*(float(correlation.pvalue)<0.01)+'*'*(float(correlation.pvalue)<0.001)
         df_scores.loc[index,'AUC ROC'] = np.round(roc_auc,6)
 
         df_plot = df_htws[df_htws[index]>0]
