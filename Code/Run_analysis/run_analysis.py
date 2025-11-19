@@ -30,7 +30,7 @@ nb_top_events=10 #number of top detected events to look for in the litterature
 
 name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
-#read_directory = "/data/tmandonnet"
+#read_directory = "/data/tmandonnet/extreme_htws_cc3d"
 read_directory = "/home/user/These/extreme_htws_cc3d/Data"
 
 write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")

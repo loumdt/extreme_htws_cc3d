@@ -30,17 +30,20 @@ nb_top_events=10 #number of top detected events to look for in the litterature
 
 name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
-#read_directory = "/data/tmandonnet"
+#read_directory = "/data/tmandonnet/extreme_htws_cc3d"
 read_directory = "/home/user/These/extreme_htws_cc3d/Data"
 
-write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
-Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
 pop_file_path = join(read_directory,"GHS-POP","GHS_POP_R2023A_1975_2030_ERA5_Europe_grid.nc")
-temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1950-2021.nc")
 emdat_file_path = join(read_directory,"EM-DAT","EMDAT_Europe_Turkey-1975-2021-heatwaves.xlsx")
-for temp_variable in ['tx','tg','tn'] :
+for daily_var in ['tx','tg','tn'] :
     for nb_days in [3,4] :
         for threshold_value in [90,95] :
+            print("daily_var:", daily_var)
+            print("nb_days:", nb_days)
+            print("threshold_value:", threshold_value)
+            write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
+            Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
+            temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1950-2021.nc")
             if distrib_window_size%2==0:
                 raise ValueError('distrib_window_size is even. It has to be odd so the window can be centered on the computed day.')
             if relative_threshold==False and anomaly==True:
@@ -76,7 +79,7 @@ for temp_variable in ['tx','tg','tn'] :
 
             if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
                 print("\n Running validate_indices_vs_emdat_impacts... \n")
-                validate_indices_vs_emdat_impacts(write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
+                validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
 
             #if overwrite_files or exists(join(write_directory,f"top_{nb_top_events}_events_overlap.xlsx"))==False :
             #    print("\n Running analysis_top_detected_events... \n")
