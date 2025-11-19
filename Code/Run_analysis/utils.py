@@ -496,8 +496,10 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
     df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
     df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
-    df_best_scores.loc[get_index,"best_auc_roc"] = str(df_scores["AUC ROC"].idxmax())
-    df_best_scores.loc[get_index,"best_pearson_R"] = str(df_scores["R Pearson"].idxmax())
+    df_best_scores.loc[get_index,"best_auc_roc_idx"] = str(df_scores["AUC ROC"].idxmax())
+    df_best_scores.loc[get_index,"best_pearson_R_dx"] = str(df_scores["R Pearson"].idxmax())
+    df_best_scores.loc[get_index,"best_auc_roc"] = df_scores["AUC ROC"].max()
+    df_best_scores.loc[get_index,"best_pearson_R"] = df_scores["R Pearson"].max()
     df_best_scores.to_csv(join(read_directory,"summary_detection_overlap_sensitivity.csv"))
 
     return
