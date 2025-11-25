@@ -414,6 +414,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     'Temp_sum':True,'HWMId_sum':True,'Affected population':True,'Total affected population':True,'Temp_pop':True,'HWMId_pop':True}
 
     sns.set_theme()
+    sns.set(font_scale=1.25)
     norm = clrs.LogNorm(vmin=1, vmax=df_htws['EM-DAT Total Deaths'].max())
     sm = plt.cm.ScalarMappable(cmap="YlOrRd", norm=norm)
     sm.set_array([])
@@ -457,7 +458,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     f.savefig(join(write_directory,'figs',"correlation_4idx.pdf"),dpi=1200)
     plt.close()
     # Trends
-    f, axs = plt.subplots(2, 2, figsize=(14, 8),sharey=True)
+    f, axs = plt.subplots(2, 2, figsize=(8, 6),sharey=True)
     for i in range(len(shown_indices)) :
         df_plot = df_htws[df_htws[shown_indices[i]]>0]
         ax = sns.scatterplot(data=df_htws, x=shown_indices[i], y="Spatial extent", hue="Year", size="Duration",
@@ -470,21 +471,23 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
             ax.set(ylabel=None)
         ax.get_legend().remove()
     handles, labels = axs[0,0].get_legend_handles_labels()
+    f.tight_layout()
     f.legend(handles, labels, loc=(0.91,0.33))
     f.savefig(join(write_directory,'figs',"trend_4idx.pdf"),dpi=1200)
     plt.close()
     # Distributions
-    f, axs = plt.subplots(2, 2, figsize=(12, 6),sharey=True)
+    f, axs = plt.subplots(2, 2, figsize=(8, 6),sharey=True)
     for i in range(len(shown_indices)) :
         df_plot = df_htws[df_htws[shown_indices[i]]>0]
         df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
         ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
         sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='b') 
-        sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.1,legend=False, ax=axs[i//2,i%2])
+        sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.15,legend=False, ax=axs[i//2,i%2])
         if i%2==1 :
             ax.set(ylabel=None)
     f.tight_layout()
-    f.figure.colorbar(sm,ax=axs,label='Total Deaths')
+    cbar = f.figure.colorbar(sm,ax=axs,label='Total Deaths')
+    #cbar.ax.tick_params(labelsize=25)
     f.savefig(join(write_directory,'figs',"distrib_4idx.pdf"),dpi=1200)
     plt.close()
 
@@ -497,9 +500,20 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
     df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
     df_best_scores.loc[get_index,"best_auc_roc_idx"] = str(df_scores["AUC ROC"].idxmax())
-    df_best_scores.loc[get_index,"best_pearson_R_dx"] = str(df_scores["R Pearson"].idxmax())
+    df_best_scores.loc[get_index,"best_pearson_R_idx"] = str(df_scores["R Pearson"].idxmax())
     df_best_scores.loc[get_index,"best_auc_roc"] = df_scores["AUC ROC"].max()
     df_best_scores.loc[get_index,"best_pearson_R"] = df_scores["R Pearson"].max()
+    # Record the number of matching EM-DAT heatwaves
+    list_htws = []
+    for htws in df_htws["EM-DAT heatwaves"] :
+        htws = htws.replace(' ','')
+        if len(htws)>0 :
+            htws = htws.split(",")
+            list_htws += htws
+    list_htws = np.unique(list_htws)
+    df_best_scores.loc[get_index,"nb_emdat_matching_htws"] = len(list_htws)
+    df_best_scores.loc[get_index,"emdat_matching_htws"] = str(list_htws)
+
     df_best_scores.to_csv(join(read_directory,"summary_detection_overlap_sensitivity.csv"))
 
     return
