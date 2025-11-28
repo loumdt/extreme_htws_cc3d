@@ -497,7 +497,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_htws_bbplot = df_htws.drop(drop_list) # Drop the heatwave where HWMId_po = 0 in rder to plot with logartihmix color scale
     # Bubbleplot, only for HWMId_pop
     label_2003 = 161
-    label_2010 = 225,228,229
+    label_2010 = [225,228,229]
     handles, labels = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent",  size="Duration",
         sizes=(20, 200)).get_legend_handles_labels()
     plt.close()
