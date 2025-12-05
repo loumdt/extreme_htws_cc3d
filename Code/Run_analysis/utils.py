@@ -581,6 +581,34 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
     return
 
+
+    df_best_scores = pd.read_csv(join(read_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
+
+    df_scores = df_scores.loc[["Intensity","HWMId_sum","Affected population","HWMId_pop"]]
+
+    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)].index.values[0]
+
+    df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
+    df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
+    df_best_scores.loc[get_index,"best_auc_roc_idx"] = str(df_scores["AUC ROC"].idxmax())
+    df_best_scores.loc[get_index,"best_pearson_R_idx"] = str(df_scores["R Pearson"].idxmax())
+    df_best_scores.loc[get_index,"best_auc_roc"] = df_scores["AUC ROC"].max()
+    df_best_scores.loc[get_index,"best_pearson_R"] = df_scores["R Pearson"].max()
+    # Record the number of matching EM-DAT heatwaves
+    list_htws = []
+    for htws in df_htws["EM-DAT heatwaves"] :
+        htws = htws.replace(' ','')
+        if len(htws)>0 :
+            htws = htws.split(",")
+            list_htws += htws
+    list_htws = np.unique(list_htws)
+    df_best_scores.loc[get_index,"nb_emdat_matching_htws"] = len(list_htws)
+    df_best_scores.loc[get_index,"emdat_matching_htws"] = str(list_htws)
+
+    df_best_scores.to_csv(join(read_directory,"summary_detection_overlap_sensitivity.csv"))
+
+    return
+
 def analysis_top_detected_events(database='ERA5', datavar='t2m', daily_var='tg', year_beg=1950, year_end=2021, threshold_value=95, year_beg_climatology=1950, year_end_climatology=2021, distrib_window_size=15,nb_days=4,flex_time_span=7,nb_top_events=30,best_scoring_index='Multi_index_HWMId',count_all_impacts=True, anomaly=True, relative_threshold=True):
     '''This function is used to search for the top detected heatwaves in an alternate impact database.'''
     
