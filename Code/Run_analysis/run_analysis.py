@@ -12,7 +12,7 @@ from utils import *
 temp_variable = 't2m' # 't2m', 'wbgt' or 'utci'
 daily_var = 'tx' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
 start_year = 1975 # beginning of the studied period, default 1950
-end_year = 2021 # end of the studied period, default 2021
+end_year = 2024 # end of the studied period, default 2021
 
 start_year_ref = 1975 #beginning of the climatology period, default 1950
 end_year_ref = 2021 #end of the climatology period, default 2021
@@ -36,7 +36,7 @@ read_directory = "/home/user/These/extreme_htws_cc3d/Data"
 write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
 Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
 pop_file_path = join(read_directory,"GHS-POP","GHS_POP_R2023A_1975_2030_ERA5_Europe_grid.nc")
-temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1950-2021.nc")
+temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1975-2024.nc")
 emdat_file_path = join(read_directory,"EM-DAT","EMDAT_Europe_Turkey-1975-2021-heatwaves.xlsx")
 
 if distrib_window_size%2==0:

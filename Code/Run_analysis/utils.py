@@ -10,6 +10,7 @@ import matplotlib.colors as clrs
 from scipy import stats
 from sklearn import metrics
 import cftime
+from ast import literal_eval
 
 def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m',smooth_span=15) :
     '''This function computes a climatology for each calendar day of the year. The seasonal cycle is then smoothed with a 31-day window. 
@@ -270,7 +271,7 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
 
     labels_list = np.unique(da_labels.data)
     labels_list = labels_list[np.where(labels_list!=0)] # Remove zero which corresponds to the absence of hot point, not a heatwave label ID
-    df_htws = pd.DataFrame(columns=['Year','Start Date','End Date','Mean','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','Affected population','Total affected population','Temp_pop','HWMId_pop','EM-DAT heatwaves','EM-DAT Total Deaths'],index=[int(i) for i in labels_list],data=None)    
+    df_htws = pd.DataFrame(columns=['Year','Start Date','End Date','Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Affected population','Total affected population','Temp_pop','HWMId_pop','HWMId_pop_mean','EM-DAT heatwaves','EM-DAT Total Deaths'],index=[int(i) for i in labels_list],data=None)    
 
     for year in range(end_year-start_year+1) : # Compute temperature exceedance relative to the threshold, iterate over years (92 JJA days per year)
         da_temp[year*92:(year+1)*92,:,:] = da_temp[year*92:(year+1)*92,:,:] - da_threshold.data
@@ -295,16 +296,18 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         da_pop_density_htw = da_pop_density.sel(time=(da_pop.time.dt.year==year_event))
         da_pop_density_htw = da_pop_density_htw.where(labels_bool_2D,drop=True)
     
-        df_htws.loc[label,'Mean'] = da_temp_htw.weighted(weights).mean().data
+        df_htws.loc[label,'Intensity'] = da_temp_htw.weighted(weights).mean().data
         df_htws.loc[label,'Spatial extent'] = (da_cell_area*labels_bool_2D).sum().data
         df_htws.loc[label,'Duration'] = len(da_temp_htw.time)
         df_htws.loc[label,'Max'] = da_temp_htw.max().data
         df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights).sum().data
+        df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights).mean().data
         df_htws.loc[label,'Affected population'] = da_pop_htw.sum().data
         df_htws.loc[label,'Total affected population'] = (da_bool_htw*da_pop_htw.data)[:,:,0].sum().data
         df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).sum().data
+        df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).mean().data
 
     # Save dataframe 
     df_htws.to_csv(join(write_directory,f"df_htws.csv"))
@@ -328,7 +331,8 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
     df_emdat = pd.read_excel(join(emdat_file_path),header=0, index_col=0) 
     df_emdat = df_emdat[(df_emdat['Start Year']>=start_year) & (df_emdat['Start Year']<=end_year)] # Only keep events of the studied period (default 1975-2021)
     df_emdat = df_emdat[(df_emdat['Start Month'].isin([6,7,8])) | (df_emdat['End Month'].isin([6,7,8]))] # Remove heatwaves occurring outside JJA period
-
+    df_emdat = df_emdat[['ISO','Country','Subregion','Start Year','Start Month','Start Day','End Year','End Month','End Day','Total Deaths']]
+    df_emdat['overlap CC3D'] = None
     # Load temperature-related data in case indices need to be recomputed (only occur if one EM-DAT heatwave matches several CC3D heatwaves)
     ds_labels = xr.open_dataset(join(write_directory,f"labels_cc3d.nc"),engine='netcdf4')
     da_labels = ds_labels.label
@@ -358,6 +362,10 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
                     'United Kingdom of Great Britain and Northern Ireland':'United_Kingdom',
                     'Ukraine':'Ukraine','Yugoslavia':'Serbia'} # The corresponding heatwave happened in Serbia, cf 'Location' data of EM-DAT
 
+    # Load cell area
+    ds_cell_area = xr.open_dataset(join(read_directory,"ERA5","ERA5_Europe_cellarea.nc"),engine='netcdf4') # Area of each grid cell, in m²
+    da_cell_area = ds_cell_area.cell_area/1e6 # Load DataArray and convert to km²
+
     for emdat_event in tqdm(df_emdat.index) :
         country = df_emdat.loc[emdat_event,'Country']
         mask_country = xr.open_dataset(join(read_directory,"ERA5","Mask",f"Mask_{country_dict[country]}_ERA5_0.25deg.nc"),engine='netcdf4').mask
@@ -383,37 +391,46 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
         
         labels_list = np.unique(da_labels_event.data)
         labels_list = labels_list[np.where(labels_list!=0)] # Remove zero which corresponds to the absence of hot point, not a heatwave label ID
+        summed_area_dict = {}
+        total_summed_area = 0
+        for label in labels_list :
+            da_lab_htw = da_labels_event.where(da_labels_event==label,drop=False)
+            da_lab_htw.data = (da_lab_htw.data>0)
+            summed_area = (da_lab_htw*da_cell_area.data).sum().data
+            summed_area_dict[label] = summed_area
+            total_summed_area += summed_area
+
         for label in labels_list :
             htw_list = df_htws.loc[label,'EM-DAT heatwaves']
             df_htws.loc[label,'EM-DAT heatwaves'] = htw_list + ","*(len(htw_list)>1) + emdat_event
-            if df_emdat.loc[emdat_event,'Total Deaths'] is not None :
-                df_htws.loc[label,'EM-DAT Total Deaths'] += df_emdat.loc[emdat_event,'Total Deaths']
-
+            if ~(df_emdat.loc[emdat_event,'Total Deaths'] is None or np.isnan(df_emdat.loc[emdat_event,'Total Deaths'])) :
+                df_htws.loc[label,'EM-DAT Total Deaths'] += round(df_emdat.loc[emdat_event,'Total Deaths']*summed_area_dict[label]/total_summed_area)
+        df_emdat.loc[emdat_event,'overlap CC3D'] = str(labels_list)
     # Save dataframe 
     df_htws.to_csv(join(write_directory,"df_htws_step2.csv"))
-
+    df_emdat.to_csv(join(write_directory,"df_emdat_overlap.csv"))
     ds_labels.close()
     return
 
 def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=False,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3) :
     # Load heatwaves indices database
     df_htws = pd.read_csv(join(write_directory,f"df_htws_step2.csv"),header=0, index_col=0)
-    
     # Load EM-DAT dataset
     df_emdat = pd.read_excel(join(emdat_file_path),header=0, index_col=0) 
     df_emdat = df_emdat[(df_emdat['Start Year']>=start_year) & (df_emdat['Start Year']<=end_year)] # Only keep events of the studied period (default 1975-2021)
     df_emdat = df_emdat[(df_emdat['Start Month'].isin([6,7,8])) | (df_emdat['End Month'].isin([6,7,8]))] # Remove heatwaves occurring outside JJA period
 
-    htw_indices = ['Mean','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','Affected population','Total affected population','Temp_pop','HWMId_pop']
-    shown_indices = ['Mean', 'HWMId_sum','Affected population','HWMId_pop']
+    htw_indices = ['Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Affected population','Total affected population','Temp_pop','HWMId_pop','HWMId_pop_mean']
+    shown_indices = ['Intensity', 'HWMId_sum','Affected population','HWMId_pop']
 
-    df_scores = pd.DataFrame(index=htw_indices,columns=['R Pearson','p-value','significance','AUC ROC'])
+    df_scores = pd.DataFrame(index=htw_indices,columns=['R Pearson','p-value','significance','AUC ROC','Total score'])
     df_correlation = df_htws[df_htws['EM-DAT heatwaves'].map(len)>1]
 
-    log_scale_dict = {'Mean':False,'Spatial extent':True,'Duration':False,'Max':False,
-    'Temp_sum':True,'HWMId_sum':True,'Affected population':True,'Total affected population':True,'Temp_pop':True,'HWMId_pop':True}
+    log_scale_dict = {'Intensity':False,'Spatial extent':True,'Duration':False,'Max':False,
+    'Temp_sum':True,'HWMId_sum':True,'HWMId_mean':False,'Affected population':True,
+    'Total affected population':True,'Temp_pop':True,'HWMId_pop':True,'HWMId_pop_mean':False}
 
-    sns.set_theme()
+    sns.set_theme(style="whitegrid")
     sns.set(font_scale=1.25)
     norm = clrs.LogNorm(vmin=1, vmax=df_htws['EM-DAT Total Deaths'].max())
     sm = plt.cm.ScalarMappable(cmap="YlOrRd", norm=norm)
@@ -427,19 +444,18 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         df_scores.loc[index,'p-value'] = np.round(correlation.pvalue,6)
         df_scores.loc[index,'significance'] = ''+'*'*(float(correlation.pvalue)<0.05)+'*'*(float(correlation.pvalue)<0.01)+'*'*(float(correlation.pvalue)<0.001)
         df_scores.loc[index,'AUC ROC'] = np.round(roc_auc,6)
+        df_scores.loc[index,'Total score'] = np.round(roc_auc*correlation.rvalue,6)
 
         df_plot = df_htws[df_htws[index]>0]
         df_corrplot = df_correlation[df_correlation[index]>0]
         # Plot correlation between index values and impact values (only for overlapping heatwaves) and save correlation scores in df
+        sns.set_theme(style="whitegrid")
         ax = sns.regplot(data=df_corrplot, x="EM-DAT Total Deaths", y=index, marker="x", line_kws=dict(color="r"))
         plt.savefig(join(write_directory,'figs',f"correlation_{index}.pdf"),dpi=1200)
         plt.close()
 
-        # Plot trends
-        #ax = None
-        #plt.savefig(join(write_directory,'figs',f"trend_{index}.pdf"),dpi=1200)
-
         # Plot distributions showing overlapping heatwaves
+        sns.set_theme(style="whitegrid")
         ax = sns.displot(df_plot, x=index, kind="kde", log_scale=log_scale_dict[index], bw_adjust=0.5) # Plot KDE distribution
         sns.rugplot(df_plot,x=index) 
         sns.rugplot(df_corrplot,x=index,hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.1,legend=False)
@@ -448,52 +464,99 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         plt.savefig(join(write_directory,'figs',f"distrib_{index}.pdf"),dpi=1200)
         plt.close()
     df_scores.to_csv(join(write_directory,"df_scores.csv"))
-    # Plot trends, distribution, correlation for 4 shown_indices (4 subplots)
-    # Correlations
-    f, axs = plt.subplots(2, 2, figsize=(12, 6))
-    for i in range(len(shown_indices)) :
-        df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
-        sns.regplot(data=df_corrplot, x="EM-DAT Total Deaths", y=shown_indices[i], marker="x", line_kws=dict(color="r"), ax=axs[i//2,i%2])
-    f.tight_layout()
-    f.savefig(join(write_directory,'figs',"correlation_4idx.pdf"),dpi=1200)
-    plt.close()
-    # Trends
-    f, axs = plt.subplots(2, 2, figsize=(8, 6),sharey=True)
-    for i in range(len(shown_indices)) :
-        df_plot = df_htws[df_htws[shown_indices[i]]>0]
-        ax = sns.scatterplot(data=df_htws, x=shown_indices[i], y="Spatial extent", hue="Year", size="Duration",
-        sizes=(20, 200),ax=axs[i//2,i%2],palette=sns.color_palette("rocket_r", as_cmap=True))
-        if log_scale_dict[shown_indices[i]] :
-            ax.loglog()
-        else :
-            ax.semilogy()
-        if i%2==1 :
-            ax.set(ylabel=None)
-        ax.get_legend().remove()
-    handles, labels = axs[0,0].get_legend_handles_labels()
-    f.tight_layout()
-    f.legend(handles, labels, loc=(0.91,0.33))
-    f.savefig(join(write_directory,'figs',"trend_4idx.pdf"),dpi=1200)
-    plt.close()
-    # Distributions
-    f, axs = plt.subplots(2, 2, figsize=(8, 6),sharey=True)
-    for i in range(len(shown_indices)) :
-        df_plot = df_htws[df_htws[shown_indices[i]]>0]
-        df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
-        ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
-        sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='b') 
-        sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.15,legend=False, ax=axs[i//2,i%2])
-        if i%2==1 :
-            ax.set(ylabel=None)
-    f.tight_layout()
-    cbar = f.figure.colorbar(sm,ax=axs,label='Total Deaths')
-    #cbar.ax.tick_params(labelsize=25)
-    f.savefig(join(write_directory,'figs',"distrib_4idx.pdf"),dpi=1200)
-    plt.close()
+    
+    dont_skip_figure = True
+    if dont_skip_figure :
+        # Plot distribution and correlation for 4 shown_indices (4 subplots)
+        # Correlations
+        sns.set_theme(style="whitegrid")
+        f, axs = plt.subplots(2, 2, figsize=(12, 6))
+        for i in range(len(shown_indices)) :
+            df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
+            sns.regplot(data=df_corrplot, x="EM-DAT Total Deaths", y=shown_indices[i], marker="x", line_kws=dict(color="r"), ax=axs[i//2,i%2])
+        f.tight_layout()
+        f.savefig(join(write_directory,'figs',"correlation_4idx.pdf"),dpi=1200)
+        plt.close()
+        
+        # Distributions
+        sns.set_theme(style="whitegrid")
+        f, axs = plt.subplots(2, 2, figsize=(8, 6),sharey=True)
+        for i in range(len(shown_indices)) :
+            df_plot = df_htws[df_htws[shown_indices[i]]>0]
+            df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
+            ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
+            sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='b') 
+            sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.25,lw=1,legend=False, ax=axs[i//2,i%2])
+            plt.ylim([0,1.05])
+            if i%2==1 :
+                ax.set(ylabel=None)
+        f.tight_layout()
+        cbar = f.figure.colorbar(sm,ax=axs,label='Total Deaths')
+        f.savefig(join(write_directory,'figs',"distrib_4idx.pdf"),dpi=1200)
+        plt.close()
+
+        df_htws["Overlap"] = None
+        df_htws["edgecolors"] = None
+        df_htws["linewidth"] = None
+        drop_list = []
+        for i in df_htws.index :
+            df_htws.loc[i,"Overlap"] = len(df_htws.loc[i,"EM-DAT heatwaves"])>1
+            if df_htws.loc[i,"HWMId_pop"]==0 :
+                drop_list.append(i)
+        df_htws_bbplot = df_htws.drop(drop_list) # Drop the heatwaves where HWMId_pop = 0 in order to plot with logartihmic color scale
+        # Bubbleplot, only for HWMId_pop
+        label_2003 = 161
+        label_2010 = [226,229,230]
+        handles, labels = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent",  size="Duration",
+            sizes=(20, 200),color='black').get_legend_handles_labels()
+        plt.close()
+        norm = clrs.LogNorm(vmin=1, vmax=df_htws_bbplot['HWMId_pop'].max())
+        sm = plt.cm.ScalarMappable(cmap="rocket_r", norm=norm)
+        sm.set_array([])
+        sns.set_theme(style="whitegrid")
+        f = plt.figure(figsize=(8, 6))
+        ax = sns.scatterplot(data=df_htws.drop(drop_list), x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
+            sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),style="Overlap",markers=["o","v"])
+        #ax = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
+        #    sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True))#,style="Overlap")
+        #sns.scatterplot(data=df_correlation, x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
+        #    sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),edgecolor='limegreen',linewidth=1)#,style="Overlap")
+        ax.annotate('2003', 
+                xy=(df_htws_bbplot.loc[label_2003,'Year'],df_htws_bbplot.loc[label_2003,'Spatial extent']), 
+                xytext=(1995, 2e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.3',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+        ax.annotate('2010', 
+                xy=(df_htws_bbplot.loc[label_2010[2],'Year'],df_htws_bbplot.loc[label_2010[2],'Spatial extent']), 
+                xytext=(2013, 2.5e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.3',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+        ax.annotate('', 
+                xy=(df_htws_bbplot.loc[label_2010[1],'Year'],df_htws_bbplot.loc[label_2010[1],'Spatial extent']), 
+                xytext=(2013, 2.5e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.4',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+        ax.annotate('', 
+                xy=(df_htws_bbplot.loc[label_2010[0],'Year'],df_htws_bbplot.loc[label_2010[0],'Spatial extent']), 
+                xytext=(2013, 2.5e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.3',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+
+        ax.semilogy()
+        plt.legend(handles, labels, loc='upper left',title='Duration')#loc=(0.1,0.625)
+        plt.ylabel('Spatial extent (km²)')
+        cbar = f.figure.colorbar(sm,ax=ax,label='HWMId_pop')
+        plt.tight_layout()
+        plt.savefig(join(write_directory,'figs',"bubble_plot_HWMId_pop.pdf"),dpi=1200)
+        plt.close()
 
     df_best_scores = pd.read_csv(join(read_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
 
-    df_scores = df_scores.loc[["Mean","HWMId_sum","Affected population","HWMId_pop"]]
+    df_scores = df_scores.loc[["Intensity","HWMId_sum","Affected population","HWMId_pop"]]
 
     get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)].index.values[0]
 
