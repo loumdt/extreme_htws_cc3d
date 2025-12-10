@@ -12,7 +12,7 @@ from utils import *
 temp_variable = 't2m' # 't2m', 'wbgt' or 'utci'
 daily_var = 'tx' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
 start_year = 1975 # beginning of the studied period, default 1950
-end_year = 2024 # end of the studied period, default 2021
+end_year = 2021 # end of the studied period, default 2021
 
 start_year_ref = 1975 #beginning of the climatology period, default 1950
 end_year_ref = 2021 #end of the climatology period, default 2021
@@ -74,8 +74,8 @@ if overwrite_files or exists(join(write_directory,"df_htws_step2.csv"))==False :
 
 if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
     print("\n Running validate_indices_vs_emdat_impacts... \n")
-validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
+    validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
 
-#if overwrite_files or exists(join(write_directory,f"top_{nb_top_events}_events_overlap.xlsx"))==False :
-#    print("\n Running analysis_top_detected_events... \n")
-#    analysis_top_detected_events(database=database, temp_variable=temp_variable, daily_var=daily_var, year_beg=year_beg, year_end=year_end, threshold_value=threshold_value, year_beg_climatology=year_beg_climatology, year_end_climatology=year_end_climatology, distrib_window_size=distrib_window_size,nb_top_events=nb_top_events, anomaly=anomaly, relative_threshold=relative_threshold, nb_days=nb_days)#,normalize_impact_country=normalize_impact_country,normalize_impact_affected_region=normalize_impact_affected_region)
+if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
+    print("\n Running analysis_top_detected_events... \n")
+analysis_top_detected_events(read_directory=read_directory,write_directory=write_directory)
