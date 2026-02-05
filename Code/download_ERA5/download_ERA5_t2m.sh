@@ -8,5 +8,5 @@
 ## Loop
 for ((year = 1975 ; year < 2025 ; year++ ))
 do
-	python3 /home/tmandonnet/download_ERA5/ERA5_t2m_1940.py $year
+	python3 /home/tmandonnet/download_ERA5/download_ERA5_t2m.py $year
 done
