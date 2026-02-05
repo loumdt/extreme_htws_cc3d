@@ -27,3 +27,5 @@ Code/thermofeel-1.0.0/*
 Code/thermofeel-1.0.0
 Data/*/*.nc
 txt.txt
+Data/ERA5_t2m_tx_95th_4days_flex_3d_1975_2021_ref_1975_2021/*
+Data/ERA5_t2m_tx_95th_4days_flex_3d_1975_2024_ref_1975_2021/*
