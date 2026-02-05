@@ -8,6 +8,7 @@
 import sys,os
 import cdsapi
 
+work_dir="/path/to/dir"
 
 if __name__ == "__main__":
 	
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 				}
 	
 	## Output
-	pout = os.path.join( "/data", "tmandonnet" , "ERA5" , "t2m" )
+	pout = os.path.join( work_dir , "ERA5" , "t2m" )
 	if not os.path.isdir(pout):
 		os.makedirs(pout)
 	fout = f"ERA5_Europe_hour_t2m_{y}010100-{y}123123.nc"

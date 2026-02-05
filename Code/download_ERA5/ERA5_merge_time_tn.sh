@@ -5,4 +5,6 @@
 
 module load cdo/2.3.0
 
-cdo mergetime /data/tmandonnet/ERA5/t2m/day/ERA5_Europe_day_tn*.nc /data/tmandonnet/ERA5/ERA5_t2m_tn_Europe_day_0.25deg_1975-2024.nc
+work_dir="/path/to/dir"
+
+cdo mergetime ${work_dir}/ERA5/t2m/day/ERA5_Europe_day_tn*.nc ${work_dir}/ERA5/ERA5_t2m_tn_Europe_day_0.25deg_1975-2024.nc

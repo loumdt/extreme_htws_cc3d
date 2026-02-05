@@ -3,8 +3,12 @@
 #SBATCH --time=4:00:00
 #SBATCH --mem=64G
 
-source /home/tmandonnet/.gdal_env/bin/activate
-datadir="/scratchu/tmandonnet/GHS-POP"
+homedir="/path/to/homedir"
+source ${homedir}/.gdal_env/bin/activate
+
+datadir="/path/to/dir/GHS-POP"
+datadir2=/path/to/datadir2"
+
 year_start=1975
 year_end=2030
 
@@ -18,7 +22,7 @@ do
     cdo sellonlatbox,-13,46,29,72 "$datadir/GHS_POP_R2023A_4326_30ss_${year}.nc" "$datadir/GHS_POP_R2023A_4326_30ss_${year}_smallbox.nc"
     rm "$datadir/GHS_POP_R2023A_4326_30ss_${year}.nc"
     echo "python3 add_time_dim.py"
-    python3 /home/tmandonnet/GHS_POP_formatting/add_time_dim.py "$datadir/GHS_POP_R2023A_4326_30ss_${year}_smallbox.nc" $year
+    python3 ${homedir}/GHS_POP_formatting/add_time_dim.py "$datadir/GHS_POP_R2023A_4326_30ss_${year}_smallbox.nc" $year
     rm "$datadir/GHS_POP_R2023A_4326_30ss_${year}_smallbox.nc"
 
 done
@@ -30,8 +34,8 @@ echo "cdo inttime"
 cdo inttime,${year_start}-01-01,00:00:00,1year $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_merged.nc $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc
 rm $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_merged.nc
 
-cdo -remapcon,/data/tmandonnet/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc "$datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc" "$datadir/GHS_POP_R2023A_${year_start}_${year_end}_ERA5_Europe_grid.nc"
+cdo -remapcon,${datadir2}/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc "$datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc" "$datadir/GHS_POP_R2023A_${year_start}_${year_end}_ERA5_Europe_grid.nc"
 
-cdo gridarea /data/tmandonnet/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc /data/tmandonnet/ERA5/ERA5_Europe_cellarea.nc
+cdo gridarea ${datadir2}/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc ${datadir2}/ERA5/ERA5_Europe_cellarea.nc
 
 echo "Done"

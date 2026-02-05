@@ -3,10 +3,12 @@
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
 
-. /home/tmandonnet/.cdsapi_env/bin/activate
+work_dir="/path/to/dir"
+
+. ${work_dir}/.cdsapi_env/bin/activate
 
 ## Loop
 for ((year = 1975 ; year < 2025 ; year++ ))
 do
-	python3 /home/tmandonnet/download_ERA5/download_ERA5_t2m.py $year
+	python3 ${work_dir}/download_ERA5/download_ERA5_t2m.py $year
 done

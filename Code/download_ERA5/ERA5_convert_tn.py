@@ -12,12 +12,13 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
+work_dir="/path/to/dir"
 
 if __name__ == "__main__":
 	
 	## Parameters
-	pin  = os.path.join( "/data/tmandonnet" , "ERA5" , "t2m" )
-	pout = os.path.join( "/data/tmandonnet" , "ERA5" , "t2m", "day" )
+	pin  = os.path.join( work_dir , "ERA5" , "t2m" )
+	pout = os.path.join( work_dir , "ERA5" , "t2m", "day" )
 	
 	## List files
 	lfiles = os.listdir(pin)
