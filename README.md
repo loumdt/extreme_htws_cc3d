@@ -10,7 +10,7 @@ Preprocessed and output data are also available here: [https://doi.org/10.5281/z
 [https://cds.climate.copernicus.eu/cdsapp\#!/dataset/reanalysis-era5-single-levels](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=download)
 
 ### GHS-POP dataset
-[https://ghsl.jrc.ec.europa.eu/ghs_pop2019.php](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop)
+[https://human-settlement.emergency.copernicus.eu/download.php?ds=pop](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop)
 
 ### EM-DAT dataset
 [https://public.emdat.be/](https://public.emdat.be/)
