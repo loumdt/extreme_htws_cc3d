@@ -1,5 +1,7 @@
-# [Accounting for exposure in 3D spatiotemporally contiguous heatwaves in Europe 1975-2024](https://hal.science/view/index/docid/5495839)
+# Accounting for exposure in 3D spatiotemporally contiguous heatwaves in Europe 1975-2024
 Lou Mandonnet, Aglaé Jézéquel, Fabio D'Andrea, Améline Vallet
+
+Working Paper available on HAL: [https://hal.science/view/index/docid/5495839](https://hal.science/view/index/docid/5495839)
 
 Users will have to download data of the three datasets (ERA5, GHS-POP, EM-DAT), and preprocess data. Users will also have to set correct folder locations in the scripts.
 Preprocessed and output data are also available here: [https://doi.org/10.5281/zenodo.18496310](https://doi.org/10.5281/zenodo.18496310)
