@@ -17,7 +17,7 @@ Preprocessed and output data are also available here: [https://doi.org/10.5281/z
 
 ## Data preprocessing
 ### ERA5
-Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data:
+Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data (```chosen_variable``` refers to either tx (daily maximum), tg (daily average) or tn (daily minimum):
 1. ```download_ERA5_t2m.sh```
 2. ```ERA5_convert_[chosen_variable].sh```
 3. ```ERA5_merge_time_[chosen_variable].sh```
