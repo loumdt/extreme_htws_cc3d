@@ -1,25 +1,35 @@
-# Extreme heatwaves in Europe 1950-2021: analysis of the links between meteorology, population, and impacts
+# Accounting for exposure in 3D spatiotemporally contiguous heatwaves in Europe 1975-2024
+Lou Mandonnet, Aglaé Jézéquel, Fabio D'Andrea, Améline Vallet
 
-Disclaimer : these scripts would benefit a rewrite using xarray instead of netCDF4.
+Users will have to download data of the three datasets mentioned above (ERA5, GHS-POP, EM-DAT), and preprocess data. Users will also have to set correct folder locations in the scripts.
 
-## Data
-
-### E-OBS dataset
-https://surfobs.climate.copernicus.eu/dataaccess/access_eobs.php#datafiles
+## Datasets
 
 ### ERA5 dataset
-https://cds.climate.copernicus.eu/cdsapp\#!/dataset/reanalysis-era5-single-levels
-
-### EM-DAT dataset
-https://public.emdat.be/data
+[https://cds.climate.copernicus.eu/cdsapp\#!/dataset/reanalysis-era5-single-levels](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=download)
 
 ### GHS-POP dataset
-https://ghsl.jrc.ec.europa.eu/ghs_pop2019.php
+[https://ghsl.jrc.ec.europa.eu/ghs_pop2019.php](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop)
 
-## Data requirements
-All data files uploaded here are necessary to run scripts. Users will also have to download data of the four datasets mentioned above (EM-DAT, ERA5 and/or E-OBS, GHS-POP), and preprocess data. ERA5 data should be formatted into daily data. Other preprocessing consists in running the scripts in Pop_formatting and GDIS_EM-DAT formatting. Users will have to check file names and locations to match with scripts. 
+### EM-DAT dataset
+[https://public.emdat.be/](https://public.emdat.be/)
+
+## Data preprocessing
+### ERA5
+Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data:
+1. ```download_ERA5_t2m.sh```
+2. ```ERA5_convert_[chosen_variable].sh```
+3. ```ERA5_merge_time_[chosen_variable].sh```
+
+### GHS-POP
+Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data:
+1. ```GHS_POP_download.sh```
+2. ```GHS_POP_format.sh```
 
 ## Code
-Set parameters in run_all_detection_overlap_analysis.py and run this script to carry out the entire heatwaves detection and overlap analysis process. It calls functions in detection_overlap_functions.py and analysis_classification_plot_functions.py.
+The user can set parameters in the ```run_analysis.py``` script, such as the chosen daily variable (tg, tx, or tn), the temperature variable, the intensity threshold, the duration threshold, the period of study.
+Then, running this script will carry out the entire heatwaves detection and overlap analysis process. It calls functions defined in ```utils.py```.
+Some complementary analysis is carried out in ```undetected_and_trends.ipynb```
 
-The script run_all_detection_overlap_analysis_loop.py allows to run the entire process for several parameters combinations.
+
+The script ```run_analysis.py``` allows to run the entire process for several parameters combinations.
