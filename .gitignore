@@ -23,6 +23,7 @@ animation_backup
 docs/*
 !Data/EM-DAT/EMDAT_Europe_Turkey-1975-2021-heatwaves
 Data/EM-DAT/*
+Code/thermofeel-1.0.0/*
 Code/thermofeel-1.0.0
 Data/*/*.nc
 txt.txt
