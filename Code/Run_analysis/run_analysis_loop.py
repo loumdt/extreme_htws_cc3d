@@ -37,51 +37,55 @@ if __name__ == "__main__":
     pop_file_path = join(read_directory,"GHS-POP","GHS_POP_R2023A_1975_2030_ERA5_Europe_grid.nc")
     emdat_file_path = join(read_directory,"EM-DAT","EMDAT_Europe_Turkey-1975-2021-heatwaves.xlsx")
     for daily_var in ['tx','tg','tn'] :
-        for nb_days in [3,4] :
+        for nb_days in [3,4,5,6] :
             for threshold_value in [90,95] :
-                print("daily_var:", daily_var)
-                print("nb_days:", nb_days)
-                print("threshold_value:", threshold_value)
-                write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
-                Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
-                temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1950-2021.nc")
-                if distrib_window_size%2==0:
-                    raise ValueError('distrib_window_size is even. It has to be odd so the window can be centered on the computed day.')
-                if relative_threshold==False and anomaly==True:
-                    raise ValueError("Using an absolute threshold can only work by working on absolute values, and not anomalies. The parameter 'anomaly' should be set to False.")
-                if relative_threshold==False and threshold_value>=60 and threshold_value<100 :
-                    raise ValueError("It seems that the value given for the threshold is a percentile and not an absolute value, but the parameter 'relative_threshold' is set to False.")
+                for connectivity in [26,18,6] :
+                    for (start_year_ref,end_year_ref) in [(1975,2021),(1975,2005)] :
+                        print("daily_var:", daily_var)
+                        print("nb_days:", nb_days)
+                        print("threshold_value:", threshold_value)
+                        print("connectivity:", connectivity)
+                        print(f"baseline period: {start_year_ref}-{end_year_ref}")
+                        write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
+                        Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
+                        temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1950-2021.nc")
+                        if distrib_window_size%2==0:
+                            raise ValueError('distrib_window_size is even. It has to be odd so the window can be centered on the computed day.')
+                        if relative_threshold==False and anomaly==True:
+                            raise ValueError("Using an absolute threshold can only work by working on absolute values, and not anomalies. The parameter 'anomaly' should be set to False.")
+                        if relative_threshold==False and threshold_value>=60 and threshold_value<100 :
+                            raise ValueError("It seems that the value given for the threshold is a percentile and not an absolute value, but the parameter 'relative_threshold' is set to False.")
 
-                overwrite_files=False #If True, overwrite output files that already exists (may be relevant in case of code or data update)
-                # if overwrite_file is True or if output file does not exist : call function ; else pass
-                if (overwrite_files or exists(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"))==False) :
-                    print("\n Running compute_climatology_smooth... \n")
-                    compute_climatology_smooth(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,smooth_span=smooth_span)
+                        overwrite_files=False #If True, overwrite output files that already exists (may be relevant in case of code or data update)
+                        # if overwrite_file is True or if output file does not exist : call function ; else pass
+                        if (overwrite_files or exists(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"))==False) :
+                            print("\n Running compute_climatology_smooth... \n")
+                            compute_climatology_smooth(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,smooth_span=smooth_span)
 
-                if (overwrite_files or exists(join(write_directory,f"distrib_threshold_{threshold_value}.nc"))==False) and relative_threshold==True : # Only used for relative thresholds
-                    print("\n Running compute_distrib_percentile... \n")
-                    compute_distrib_percentile(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,threshold_value=threshold_value,distrib_window_size=distrib_window_size,anomaly=anomaly,smooth_span=smooth_span)
+                        if (overwrite_files or exists(join(write_directory,f"distrib_threshold_{threshold_value}.nc"))==False) and relative_threshold==True : # Only used for relative thresholds
+                            print("\n Running compute_distrib_percentile... \n")
+                            compute_distrib_percentile(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,threshold_value=threshold_value,distrib_window_size=distrib_window_size,anomaly=anomaly,smooth_span=smooth_span)
 
-                if overwrite_files or exists(join(write_directory,"labels_cc3d.nc"))==False :
-                    print("\n Running cc3d_scan_heatwaves... \n")
-                    cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,smooth_span=smooth_span)
-                    
-                if overwrite_files or exists(join(write_directory,"Russo_HWMId.nc"))==False :
-                    print("\n Running compute_Russo_HWMId... \n")
-                    compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,anomaly=anomaly,smooth_span=smooth_span)
+                        if overwrite_files or exists(join(write_directory,"labels_cc3d.nc"))==False :
+                            print("\n Running cc3d_scan_heatwaves... \n")
+                            cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,smooth_span=smooth_span,connectivity=connectivity)
+                            
+                        if overwrite_files or exists(join(write_directory,"Russo_HWMId.nc"))==False :
+                            print("\n Running compute_Russo_HWMId... \n")
+                            compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,anomaly=anomaly,smooth_span=smooth_span)
 
-                if overwrite_files or exists(join(write_directory,"df_htws.csv"))==False :
-                    print("\n Running create_heatwaves_indices_database... \n")
-                    create_heatwaves_indices_database(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,anomaly=anomaly,smooth_span=smooth_span)
+                        if overwrite_files or exists(join(write_directory,"df_htws.csv"))==False :
+                            print("\n Running create_heatwaves_indices_database... \n")
+                            create_heatwaves_indices_database(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,anomaly=anomaly,smooth_span=smooth_span)
 
-                if overwrite_files or exists(join(write_directory,"df_htws_step2.csv"))==False :
-                    print("\n Running analyze_emdat_overlap... \n")
-                    analyze_emdat_overlap(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,flex_time_span=flex_time_span,start_year=start_year,end_year=end_year)
+                        if overwrite_files or exists(join(write_directory,"df_htws_step2.csv"))==False :
+                            print("\n Running analyze_emdat_overlap... \n")
+                            analyze_emdat_overlap(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,flex_time_span=flex_time_span,start_year=start_year,end_year=end_year)
 
-                if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
-                    print("\n Running validate_indices_vs_emdat_impacts... \n")
-                    validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
+                        if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
+                            print("\n Running validate_indices_vs_emdat_impacts... \n")
+                            validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity)
 
-                if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
-                    print("\n Running analysis_top_detected_events... \n")
-                    analysis_top_detected_events(read_directory=read_directory,write_directory=write_directory)
+                        if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
+                            print("\n Running analysis_top_detected_events... \n")
+                            analysis_top_detected_events(read_directory=read_directory,write_directory=write_directory)
