@@ -26,8 +26,10 @@ if __name__ == "__main__":
     smooth_span = 15 #half of size of smooth span for computing climatology
     distrib_window_size = 15 #size (in days) of the temporal window that is used to compute the temperature distribution (on which is based the threshold) of each calendar day, default value is 15
     flex_time_span = 3 #In order to account for potential EM-DAT imprecisions, set a flexibility window of flex_time_span days, default value is 3
-    dust_threshold=775
-    nb_top_events=10 #number of top detected events to look for in the litterature
+    dust_threshold = 775 #Found empirically on ERA5 data. This number correspond to the thershold at which the number of heatwaves becomes stable (less than 1% of variation with an increment of 25)
+    nb_top_events = 10 #number of top detected events to look for in the litterature
+
+    connectivity = 26 # only 4,8 (2D) and 26, 18, and 6 (3D) are allowed
 
     name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
@@ -58,7 +60,7 @@ if __name__ == "__main__":
 
     if overwrite_files or exists(join(write_directory,"labels_cc3d.nc"))==False :
         print("\n Running cc3d_scan_heatwaves... \n")
-        cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,smooth_span=smooth_span)
+        cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,smooth_span=smooth_span,connectivity=connectivity)
         
     if overwrite_files or exists(join(write_directory,"Russo_HWMId.nc"))==False :
         print("\n Running compute_Russo_HWMId... \n")
@@ -74,7 +76,7 @@ if __name__ == "__main__":
 
     if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
         print("\n Running validate_indices_vs_emdat_impacts... \n")
-        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span)
+        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity)
 
     if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
         print("\n Running analysis_top_detected_events... \n")
