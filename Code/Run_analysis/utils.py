@@ -105,7 +105,7 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     ds.close()
     return
 
-def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,relative_threshold=True,anomaly=False,nb_days=4,dust_threshold=775,smooth_span=15) :
+def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,relative_threshold=True,anomaly=False,nb_days=4,dust_threshold=775,smooth_span=15,connectivity=26) :
     '''This function carries out a cc3d scan (https://pypi.org/project/connected-components-3d/) to detect heatwaves in the meteorological database (default ERA5, t2m, tx).
     The heatwaves point are labeled with a number corresponding to a heatwave identifier.
     Otherwise, values are set to -9999.'''
@@ -128,7 +128,6 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     else : # If absolute threshold, only need a scalar, not a 3D array
         threshold = threshold_value
 
-    connectivity = 26 # only 4,8 (2D) and 26, 18, and 6 (3D) are allowed
     N_labels = 0 # Count the numbers of patterns
     da = getattr(ds, temp_variable)
     # Drop 29 Feb and correct day of year
@@ -186,7 +185,7 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
         climatology.close()
     return
 
-def remove_outside_heatwaves(read_directory,labels,dust_threshold=775) :
+def remove_outside_heatwaves(read_directory,labels,dust_threshold=775,connectivity=26) :
     '''Remove sea heatwaves and heatwaves occurring outside continental Europe
     '''
     
@@ -196,8 +195,7 @@ def remove_outside_heatwaves(read_directory,labels,dust_threshold=775) :
     labels = labels * (land_mask.data==0)
 
     # Remove small heatwaves with the cc3d dust function
-    connectivity = 26 # only 4,8 (2D) and 26, 18, and 6 (3D) are allowed
-    labels = labels * cc3d.dust((labels>0),dust_threshold)
+    labels = labels * cc3d.dust((labels>0),dust_threshold,connectivity=connectivity)
     land_mask.close()
     return labels
 
@@ -272,7 +270,7 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
 
     labels_list = np.unique(da_labels.data)
     labels_list = labels_list[np.where(labels_list!=0)] # Remove zero which corresponds to the absence of hot point, not a heatwave label ID
-    df_htws = pd.DataFrame(columns=['Year','Start Date','End Date','Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Affected population','Total affected population','Temp_pop','HWMId_pop','HWMId_pop_mean','EM-DAT heatwaves','EM-DAT Total Deaths'],index=[int(i) for i in labels_list],data=None)    
+    df_htws = pd.DataFrame(columns=['Year','Start Date','End Date','Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Exposed_population','Total Exposed_population','Temp_pop','HWMId_pop','HWMId_pop_mean','EM-DAT heatwaves','EM-DAT Total Deaths'],index=[int(i) for i in labels_list],data=None)    
 
     for year in range(end_year-start_year+1) : # Compute temperature exceedance relative to the threshold, iterate over years (92 JJA days per year)
         da_temp[year*92:(year+1)*92,:,:] = da_temp[year*92:(year+1)*92,:,:] - da_threshold.data
@@ -304,8 +302,8 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights).mean().data
-        df_htws.loc[label,'Affected population'] = da_pop_htw.sum().data
-        df_htws.loc[label,'Total affected population'] = (da_bool_htw*da_pop_htw.data)[:,:,0].sum().data
+        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data
+        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data)[:,:,0].sum().data
         df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).mean().data
@@ -413,7 +411,7 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
     ds_labels.close()
     return
 
-def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=False,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3) :
+def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=False,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3,connectivity=26) :
     # Load heatwaves indices database
     df_htws = pd.read_csv(join(write_directory,f"df_htws_step2.csv"),header=0, index_col=0)
     # Load EM-DAT dataset
@@ -421,15 +419,15 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_emdat = df_emdat[(df_emdat['Start Year']>=start_year) & (df_emdat['Start Year']<=end_year)] # Only keep events of the studied period (default 1975-2021)
     df_emdat = df_emdat[(df_emdat['Start Month'].isin([6,7,8])) | (df_emdat['End Month'].isin([6,7,8]))] # Remove heatwaves occurring outside JJA period
 
-    htw_indices = ['Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Affected population','Total affected population','Temp_pop','HWMId_pop','HWMId_pop_mean']
-    shown_indices = ['Intensity', 'HWMId_sum','Affected population','HWMId_pop']
+    htw_indices = ['Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Exposed_population','Total Exposed_population','Temp_pop','HWMId_pop','HWMId_pop_mean']
+    shown_indices = ['Intensity', 'HWMId_sum','Exposed_population','HWMId_pop']
 
     df_scores = pd.DataFrame(index=htw_indices,columns=['R Pearson','p-value','significance','AUC ROC','Total score'])
     df_correlation = df_htws[df_htws['EM-DAT heatwaves'].map(len)>1]
 
     log_scale_dict = {'Intensity':False,'Spatial extent':True,'Duration':False,'Max':False,
-    'Temp_sum':True,'HWMId_sum':True,'HWMId_mean':False,'Affected population':True,
-    'Total affected population':True,'Temp_pop':True,'HWMId_pop':True,'HWMId_pop_mean':False}
+    'Temp_sum':True,'HWMId_sum':True,'HWMId_mean':False,'Exposed_population':True,
+    'Total Exposed_population':True,'Temp_pop':True,'HWMId_pop':True,'HWMId_pop_mean':False}
 
     sns.set_theme(style="whitegrid")
     sns.set(font_scale=1.25)
@@ -557,16 +555,17 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
     df_best_scores = pd.read_csv(join(read_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
 
-    df_scores = df_scores.loc[["Intensity","HWMId_sum","Affected population","HWMId_pop"]]
+    df_scores = df_scores.loc[["Intensity","HWMId_sum","Exposed_population","HWMId_pop"]]
 
-    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)].index.values[0]
+    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)&(df_best_scores['connectivity']==connectivity)].index.values[0]
 
     df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
     df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
     df_best_scores.loc[get_index,"best_auc_roc_idx"] = str(df_scores["AUC ROC"].idxmax())
     df_best_scores.loc[get_index,"best_pearson_R_idx"] = str(df_scores["R Pearson"].idxmax())
-    df_best_scores.loc[get_index,"best_auc_roc"] = df_scores["AUC ROC"].max()
-    df_best_scores.loc[get_index,"best_pearson_R"] = df_scores["R Pearson"].max()
+    for index in ["Intensity","HWMId_sum","Exposed_population","HWMId_pop"]:
+        df_best_scores.loc[get_index,f"pearson_R_{index}"] = df_scores.loc[index,"R Pearson"]
+        df_best_scores.loc[get_index,f"auc_roc_{index}"] = df_scores.loc[index,"AUC ROC"]
     # Record the number of matching EM-DAT heatwaves
     list_htws = []
     for htws in df_htws["EM-DAT heatwaves"] :
