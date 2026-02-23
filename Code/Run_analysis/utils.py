@@ -13,8 +13,8 @@ import cftime
 from datetime import datetime
 from ast import literal_eval
 
-def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m',smooth_span=15) :
-    '''This function computes a climatology for each calendar day of the year. The seasonal cycle is then smoothed with a 31-day window. 
+def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m') :
+    '''This function computes a climatology for each calendar day of the year.
     By default, the climatology is computed over 1975-2021.
     This function can be used with several models and variables.'''
 
@@ -29,20 +29,8 @@ def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=197
     # Group using dayofyear and sum to compute mean at the end
     climatology = da.groupby(da.time.dt.dayofyear).mean(dim="time")
 
-    # Smoothing
-    # Handle easily first and last day of year by taking thrice the entire dataset and working on the middle one (avoiding border effects)
-    extended_temp=np.zeros((365*3,np.shape(climatology.data)[1],np.shape(climatology.data)[2]))
-    extended_temp[0:365,:,:]=climatology.data[:,:,:]
-    extended_temp[365:730,:,:]=climatology.data[:,:,:]
-    extended_temp[730:,:,:]=climatology.data[:,:,:]
-
-    print("Smoothing...")
-    #For each day d, compute the mean of the values between day d-smooth_span and d+smooth_span to have a physically realistic seasonal cycle
-    for i in tqdm(range(365,730)):
-        climatology.data[i-365,:,:] = np.nanmean(extended_temp[i-smooth_span:i+smooth_span+1,:,:],axis=0)
-
     # Export data to netcdf file
-    climatology.to_netcdf(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"))
+    climatology.to_netcdf(join(write_directory,f"climatology.nc"))
 
     # Clear resources
     da.close()
@@ -51,7 +39,7 @@ def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=197
     return
 
 
-def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m',threshold_value=95,distrib_window_size=15,anomaly=False,smooth_span=15) :
+def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m',threshold_value=95,distrib_window_size=15,anomaly=True) :
     '''This function computes, for every calendar day, the n-th (n is the threshold_value, default 95) percentile of the corresponding distribution of daily variable. 
     By default, the distribution is computed over 1975-2021.'''
 
@@ -61,7 +49,7 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     ds = xr.open_dataset(join(temp_file_path), engine="netcdf4")
 
     # Load climatology file to create output data structure and compute anomaly
-    climatology = xr.open_dataarray(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"), engine='netcdf4')
+    climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
     
     # Initialize data array with the first file
     da = getattr(ds, temp_variable) # Iterate over files, except first one which has already been used in initialization
@@ -105,7 +93,7 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     ds.close()
     return
 
-def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,relative_threshold=True,anomaly=False,nb_days=4,dust_threshold=775,smooth_span=15,connectivity=26) :
+def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,relative_threshold=True,anomaly=True,nb_days=4,dust_threshold=775,connectivity=26) :
     '''This function carries out a cc3d scan (https://pypi.org/project/connected-components-3d/) to detect heatwaves in the meteorological database (default ERA5, t2m, tx).
     The heatwaves point are labeled with a number corresponding to a heatwave identifier.
     Otherwise, values are set to -9999.'''
@@ -115,7 +103,7 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     ds = xr.open_dataset(join(temp_file_path), engine="netcdf4")
 
     if anomaly :
-        climatology = xr.open_dataarray(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"), engine='netcdf4')
+        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
         # Keep only JJA values
         mask = (climatology.dayofyear>=152) & (climatology.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
         climatology = climatology.sel(dayofyear=mask)
@@ -199,7 +187,7 @@ def remove_outside_heatwaves(read_directory,labels,dust_threshold=775,connectivi
     land_mask.close()
     return labels
 
-def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',anomaly=False,smooth_span=15) :
+def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',anomaly=True) :
     """Compute the Russo_HWMId index map.
     Based on HWMId defined by Russo et al (2015, https://dx.doi.org/10.1088/1748-9326/10/12/124003 )."""
 
@@ -212,7 +200,7 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     
     if anomaly :
         # Keep only JJA values
-        climatology = xr.open_dataarray(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"), engine='netcdf4')
+        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
         mask = (climatology.dayofyear>=152) & (climatology.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
         climatology = climatology.sel(dayofyear=mask)
         da = da - climatology
@@ -234,7 +222,7 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     return
 
 
-def create_heatwaves_indices_database(read_directory,write_directory,temp_file_path,pop_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,anomaly=False,smooth_span=15):
+def create_heatwaves_indices_database(read_directory,write_directory,temp_file_path,pop_file_path,start_year=1975,end_year=2021,temp_variable='t2m',threshold_value=95,anomaly=True):
     '''This function is used to create the dataset of the indices of the detected heatwaves. The set of detected heatwaves depends on all the parameters.'''
 
     # Load temperature-related data
@@ -253,7 +241,7 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
     da_threshold = da_threshold.sel(dayofyear=mask)
 
     if anomaly :
-        climatology = xr.open_dataarray(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"), engine='netcdf4')
+        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
         # Keep only JJA values
         climatology = climatology.sel(dayofyear=mask)
         da_temp = da_temp - climatology.data
@@ -411,7 +399,7 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
     ds_labels.close()
     return
 
-def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=False,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3,connectivity=26) :
+def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=True,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3,connectivity=26) :
     # Load heatwaves indices database
     df_htws = pd.read_csv(join(write_directory,f"df_htws_step2.csv"),header=0, index_col=0)
     # Load EM-DAT dataset

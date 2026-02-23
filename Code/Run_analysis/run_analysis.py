@@ -18,12 +18,12 @@ if __name__ == "__main__":
     start_year_ref = 1975 #beginning of the climatology period, default 1950
     end_year_ref = 2021 #end of the climatology period, default 2021
 
-    anomaly = False #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
-
+    anomaly = True #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
+    # I strongly recommend to keep anomaly True if using relative thresholds, cf https://doi.org/10.1038/s41467-024-46349-x
     nb_days = 4 #nb of days used as a heatwave duration threshold, default value is 4
     relative_threshold = True #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
     threshold_value = 95 # If relative_threshold is True, percentile used as a threshold for heatwave occurence, value in ]0;100[, default value is 95 (consistent with default value of relative_threshold). If absolute value, expected to be a value in °C.
-    smooth_span = 15 #half of size of smooth span for computing climatology
+    #smooth_span = 15 #half of size of smooth span for computing climatology
     distrib_window_size = 15 #size (in days) of the temporal window that is used to compute the temperature distribution (on which is based the threshold) of each calendar day, default value is 15
     flex_time_span = 3 #In order to account for potential EM-DAT imprecisions, set a flexibility window of flex_time_span days, default value is 3
     dust_threshold = 775 #Found empirically on ERA5 data. This number correspond to the thershold at which the number of heatwaves becomes stable (less than 1% of variation with an increment of 25)
@@ -50,25 +50,25 @@ if __name__ == "__main__":
 
     overwrite_files=False #If True, overwrite output files that already exists (may be relevant in case of code or data update)
     # if overwrite_file is True or if output file does not exist : call function ; else pass
-    if (overwrite_files or exists(join(write_directory,f"climatology_smooth_span_{smooth_span}d.nc"))==False) :
+    if (overwrite_files or exists(join(write_directory,f"climatology.nc"))==False) :
         print("\n Running compute_climatology_smooth... \n")
-        compute_climatology_smooth(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,smooth_span=smooth_span)
+        compute_climatology_smooth(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable)
 
     if (overwrite_files or exists(join(write_directory,f"distrib_threshold_{threshold_value}.nc"))==False) and relative_threshold==True : # Only used for relative thresholds
         print("\n Running compute_distrib_percentile... \n")
-        compute_distrib_percentile(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,threshold_value=threshold_value,distrib_window_size=distrib_window_size,anomaly=anomaly,smooth_span=smooth_span)
+        compute_distrib_percentile(write_directory=write_directory,temp_file_path=temp_file_path,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable,threshold_value=threshold_value,distrib_window_size=distrib_window_size,anomaly=anomaly)
 
     if overwrite_files or exists(join(write_directory,"labels_cc3d.nc"))==False :
         print("\n Running cc3d_scan_heatwaves... \n")
-        cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,smooth_span=smooth_span,connectivity=connectivity)
+        cc3d_scan_heatwaves(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,relative_threshold=relative_threshold,anomaly=anomaly,nb_days=nb_days,dust_threshold=dust_threshold,connectivity=connectivity)
         
     if overwrite_files or exists(join(write_directory,"Russo_HWMId.nc"))==False :
         print("\n Running compute_Russo_HWMId... \n")
-        compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,anomaly=anomaly,smooth_span=smooth_span)
+        compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,anomaly=anomaly)
 
     if overwrite_files or exists(join(write_directory,"df_htws.csv"))==False :
         print("\n Running create_heatwaves_indices_database... \n")
-        create_heatwaves_indices_database(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,anomaly=anomaly,smooth_span=smooth_span)
+        create_heatwaves_indices_database(read_directory=read_directory,write_directory=write_directory,temp_file_path=temp_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,threshold_value=threshold_value,anomaly=anomaly)
 
     if overwrite_files or exists(join(write_directory,"df_htws_step2.csv"))==False :
         print("\n Running analyze_emdat_overlap... \n")
