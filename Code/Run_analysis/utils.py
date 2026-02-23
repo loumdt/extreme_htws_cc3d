@@ -13,9 +13,9 @@ import cftime
 from datetime import datetime
 from ast import literal_eval
 
-def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m') :
-    '''This function computes a climatology for each calendar day of the year.
-    By default, the climatology is computed over 1975-2021.
+def compute_seasonal_cycle(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m') :
+    '''This function computes a seasonal_cycle for each calendar day of the year.
+    By default, the seasonal_cycle is computed over 1975-2021.
     This function can be used with several models and variables.'''
 
     # Load dataset
@@ -27,14 +27,14 @@ def compute_climatology_smooth(write_directory,temp_file_path,start_year_ref=197
     # Drop Feb 29
     da = da.convert_calendar("noleap")
     # Group using dayofyear and sum to compute mean at the end
-    climatology = da.groupby(da.time.dt.dayofyear).mean(dim="time")
+    seasonal_cycle = da.groupby(da.time.dt.dayofyear).mean(dim="time")
 
     # Export data to netcdf file
-    climatology.to_netcdf(join(write_directory,f"climatology.nc"))
+    seasonal_cycle.to_netcdf(join(write_directory,f"seasonal_cycle.nc"))
 
     # Clear resources
     da.close()
-    climatology.close()
+    seasonal_cycle.close()
     ds.close()
     return
 
@@ -48,8 +48,8 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
 
     ds = xr.open_dataset(join(temp_file_path), engine="netcdf4")
 
-    # Load climatology file to create output data structure and compute anomaly
-    climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
+    # Load seasonal_cycle file to create output data structure and compute anomaly
+    seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
     
     # Initialize data array with the first file
     da = getattr(ds, temp_variable) # Iterate over files, except first one which has already been used in initialization
@@ -57,14 +57,14 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     da = da.convert_calendar("noleap")
     da = da.sel(time=(da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref))
 
-    # Create threshold table by copying climatology table, values will be updated later
-    threshold = climatology.copy()
+    # Create threshold table by copying seasonal_cycle table, values will be updated later
+    threshold = seasonal_cycle.copy()
 
     if anomaly :
         for year in tqdm(range(len(da.time)//365)) : # Iterate over the number of years
-            da[year*365:(year+1)*365,:,:] = da[year*365:(year+1)*365,:,:] - climatology.data # Compute anomaly
+            da[year*365:(year+1)*365,:,:] = da[year*365:(year+1)*365,:,:] - seasonal_cycle.data # Compute anomaly
     else :
-        climatology.close()
+        seasonal_cycle.close()
     
     for day in tqdm(range(1,366)) : # Calendar days ranging from 1 to 365 (no leap years)
         if day - (distrib_window_size//2) <= 0  : # day is at the beginning of January, window overlapping with December
@@ -89,7 +89,7 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     da.close()
     threshold.close()
     if anomaly :
-        climatology.close()
+        seasonal_cycle.close()
     ds.close()
     return
 
@@ -103,10 +103,10 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     ds = xr.open_dataset(join(temp_file_path), engine="netcdf4")
 
     if anomaly :
-        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
+        seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
         # Keep only JJA values
-        mask = (climatology.dayofyear>=152) & (climatology.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
-        climatology = climatology.sel(dayofyear=mask)
+        mask = (seasonal_cycle.dayofyear>=152) & (seasonal_cycle.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
+        seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
 
     if relative_threshold : # Load temperature threshold for reference period :
         threshold = xr.open_dataarray(join(write_directory,f"distrib_threshold_{threshold_value}.nc"), engine='netcdf4')
@@ -131,8 +131,8 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
 
     for year in tqdm(range(end_year-start_year+1)) :# Iterate over the years
         da_year = da[year*92:(year+1)*92,:,:]# Select data for the given year
-        if anomaly : # Substract climatology to compute anomaly
-            da_year = da_year - climatology.data
+        if anomaly : # Substract seasonal_cycle to compute anomaly
+            da_year = da_year - seasonal_cycle.data
         da_year = da_year*(da_year>threshold.data)-9999*(da_year<=threshold.data) # Set to -9999 the values that do not exceed threshold
         stack_temp = -9999*np.ones((92,np.shape(da_year)[1],np.shape(da_year)[2])) # Create a 3D array that will hold the temperature values when and where there are heatwaves
         stack_where = np.zeros((np.shape(da_year)[1],np.shape(da_year)[2])) # Create a 2D array that holds the number of consecutive hot days for each location, computed for each day
@@ -170,7 +170,7 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     label.close()
     threshold.close()
     if anomaly :
-        climatology.close()
+        seasonal_cycle.close()
     return
 
 def remove_outside_heatwaves(read_directory,labels,dust_threshold=775,connectivity=26) :
@@ -200,10 +200,10 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     
     if anomaly :
         # Keep only JJA values
-        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
-        mask = (climatology.dayofyear>=152) & (climatology.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
-        climatology = climatology.sel(dayofyear=mask)
-        da = da - climatology
+        seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
+        mask = (seasonal_cycle.dayofyear>=152) & (seasonal_cycle.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
+        seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
+        da = da - seasonal_cycle
         
     temp_25p = np.percentile(da.groupby(da.time.dt.year).max(), 25, axis=0)
     temp_75p = np.percentile(da.groupby(da.time.dt.year).max(), 75, axis=0)
@@ -218,7 +218,7 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     da.close()
     ds.close()
     if anomaly :
-        climatology.close()
+        seasonal_cycle.close()
     return
 
 
@@ -241,10 +241,10 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
     da_threshold = da_threshold.sel(dayofyear=mask)
 
     if anomaly :
-        climatology = xr.open_dataarray(join(write_directory,f"climatology.nc"), engine='netcdf4')
+        seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
         # Keep only JJA values
-        climatology = climatology.sel(dayofyear=mask)
-        da_temp = da_temp - climatology.data
+        seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
+        da_temp = da_temp - seasonal_cycle.data
 
     # Load cell area
     ds_cell_area = xr.open_dataset(join(read_directory,"ERA5","ERA5_Europe_cellarea.nc"),engine='netcdf4') # Area of each grid cell, in m²
@@ -305,7 +305,7 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
     ds_cell_area.close()
     ds_pop.close()
     if anomaly :
-        climatology.close()
+        seasonal_cycle.close()
     return
 
 
