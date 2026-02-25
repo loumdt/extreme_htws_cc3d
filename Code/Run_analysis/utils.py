@@ -203,7 +203,8 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
         seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
         mask = (seasonal_cycle.dayofyear>=152) & (seasonal_cycle.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
         seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
-        da = da - seasonal_cycle
+        for year in tqdm(range(len(da.time)//92)) : # Iterate over the number of years
+            da[year*92:(year+1)*92,:,:] = da[year*92:(year+1)*92,:,:] - seasonal_cycle.data # Compute anomaly
         
     temp_25p = np.percentile(da.groupby(da.time.dt.year).max(), 25, axis=0)
     temp_75p = np.percentile(da.groupby(da.time.dt.year).max(), 75, axis=0)
@@ -244,7 +245,8 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
         # Keep only JJA values
         seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
-        da_temp = da_temp - seasonal_cycle.data
+        for year in tqdm(range(len(da_temp.time)//92)) : # Iterate over the number of years
+            da_temp[year*92:(year+1)*92,:,:] = da_temp[year*92:(year+1)*92,:,:] - seasonal_cycle.data # Compute anomaly
 
     # Load cell area
     ds_cell_area = xr.open_dataset(join(read_directory,"ERA5","ERA5_Europe_cellarea.nc"),engine='netcdf4') # Area of each grid cell, in m²
