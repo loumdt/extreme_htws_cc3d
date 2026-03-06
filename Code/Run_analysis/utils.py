@@ -413,7 +413,7 @@ def correlation_for_bootstrap(x,y):
     correlation = stats.linregress(x, y, nan_policy='omit')
     return correlation.rvalue
 
-def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,pop_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=True,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3,connectivity=26) :
+def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_path,pop_file_path,temp_variable='t2m',daily_var='tx',start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,anomaly=True,nb_days=4,threshold_value=95,relative_threshold=True,flex_time_span=3,connectivity=26,dont_skip_figure=True):
     # Load heatwaves indices database
     df_htws = pd.read_csv(join(write_directory,f"df_htws_step2.csv"),header=0, index_col=0)
     # Load EM-DAT dataset
@@ -504,7 +504,6 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     subprocess.call(f"Rscript /home/user/These/extreme_htws_cc3d/Code/Run_analysis/mk_senslope_CI.R {write_directory}", shell=True)
     print("Done")
 
-    dont_skip_figure = False
     if dont_skip_figure :
         # Plot distribution and correlation for 4 shown_indices (4 subplots)
         # Correlations
@@ -544,8 +543,8 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
                 drop_list.append(i)
         df_htws_bbplot = df_htws.drop(drop_list) # Drop the heatwaves where HWMId_pop = 0 in order to plot with logartihmic color scale
         # Bubbleplot, only for HWMId_pop
-        label_2003 = 161
-        label_2010 = [226,229,230]
+        label_2003 = 159
+        label_2010 = [220,222,225,226]
         handles, labels = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent",  size="Duration",
             sizes=(20, 200),color='black').get_legend_handles_labels()
         plt.close()
@@ -691,7 +690,7 @@ def analysis_top_detected_events(read_directory,write_directory) :
     
     Hammond_to_mask_dict = {'Czech Republic':'Czechia','Turkey':'Turkey','England':'United_Kingdom','England and Wales':'United_Kingdom'} # Dictionary to convert Hammond country names to country names compatible with mask files
     
-    # Load temperature-related data in case indices need to be recomputed (only occur if one EM-DAT heatwave matches several CC3D heatwaves)
+    # Load temperature-related data in case indices have to be recomputed (only occur if one EM-DAT heatwave matches several CC3D heatwaves)
     ds_labels = xr.open_dataset(join(write_directory,f"labels_cc3d.nc"),engine='netcdf4')
     da_labels = ds_labels.label
 
@@ -700,7 +699,7 @@ def analysis_top_detected_events(read_directory,write_directory) :
     da_cell_area = ds_cell_area.cell_area/1e6 # Load DataArray and convert to km² 
 
     # Load heatwaves indices database
-    df_htws = pd.read_csv(join(write_directory,f"df_htws_step2.csv"),header=0, index_col=0)
+    df_htws = pd.read_csv(join(write_directory,f"df_htws_step3.csv"),header=0, index_col=0)
     df_scores = pd.read_csv(join(write_directory,"df_scores.csv"),header=0, index_col=0)
 
     df_htws["Affected countries >10%"] = [" "]*len(df_htws)
