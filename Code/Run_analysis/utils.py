@@ -631,17 +631,20 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_best_scores.loc[get_index,"best_R2_idx"] = best_R2_idx
     df_best_scores.loc[get_index,"total_score_best_index"] = total_score_best_index
 
-    # Load Mann-Kendall trend results 
-    with open(join(write_directory,"mk_result.json"), mode='r') as f:
-        mk_result = json.load(f)
+    # Load Mann-Kendall trend results
+    try:
+        with open(join(write_directory,"mk_result.json"), mode='r') as f:
+            mk_result = json.load(f)
 
-    df_mk_result = pd.json_normalize(mk_result)
-    df_mk_result = df_mk_result.set_index('_row')
+        df_mk_result = pd.json_normalize(mk_result)
+        df_mk_result = df_mk_result.set_index('_row')
 
-    
-    for index in df_mk_result.index:
-        df_best_scores = df_best_scores.astype({f"trend_{index}":str})
-        df_best_scores.loc[get_index,f"trend_{index}"] = str({'median':df_mk_result.loc[index,'slope'],'q5':df_mk_result.loc[index,'LCL'],'q95':df_mk_result.loc[index,'UCL']})
+        
+        for index in df_mk_result.index:
+            df_best_scores = df_best_scores.astype({f"trend_{index}":str})
+            df_best_scores.loc[get_index,f"trend_{index}"] = str({'median':df_mk_result.loc[index,'slope'],'q5':df_mk_result.loc[index,'LCL'],'q95':df_mk_result.loc[index,'UCL']})
+    except: #In case unable to compute MK trend test, leave NaNs in sensitivity table
+        pass
 
     df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
     df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
