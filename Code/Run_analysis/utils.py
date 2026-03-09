@@ -561,14 +561,20 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         #    sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),edgecolor='limegreen',linewidth=1)#,style="Overlap")
         ax.annotate('2003', 
                 xy=(df_htws_bbplot.loc[label_2003,'Year'],df_htws_bbplot.loc[label_2003,'Spatial extent']), 
-                xytext=(1995, 2e6),
+                xytext=(1995, 3.5e6),
                 arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.3',alpha=0.5),
                 fontsize=12,
                 color='red', alpha = 0.7)
         ax.annotate('2010', 
+                xy=(df_htws_bbplot.loc[label_2010[3],'Year'],df_htws_bbplot.loc[label_2010[3],'Spatial extent']), 
+                xytext=(2013, 2.5e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.4',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+        ax.annotate('', 
                 xy=(df_htws_bbplot.loc[label_2010[2],'Year'],df_htws_bbplot.loc[label_2010[2],'Spatial extent']), 
                 xytext=(2013, 2.5e6),
-                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.3',alpha=0.5),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.4',alpha=0.5),
                 fontsize=12,
                 color='red', alpha = 0.7)
         ax.annotate('', 
@@ -580,7 +586,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         ax.annotate('', 
                 xy=(df_htws_bbplot.loc[label_2010[0],'Year'],df_htws_bbplot.loc[label_2010[0],'Spatial extent']), 
                 xytext=(2013, 2.5e6),
-                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.3',alpha=0.5),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=0.4',alpha=0.5),
                 fontsize=12,
                 color='red', alpha = 0.7)
 
