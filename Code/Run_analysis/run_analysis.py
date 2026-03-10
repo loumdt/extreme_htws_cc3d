@@ -1,46 +1,44 @@
 #%%
-import sys #read inputs
 from os.path import join,exists
 from pathlib import Path #check existence and create folders
 
 from utils import *
 #%%
-# wbgt absolute thresholds : [25,26,28,30,33]
-# utci absolute thresholds : [26,32,38,46]
-# t2m absolute thresholds : [25,20]
-# relative thresholds : [90, 95]
 if __name__ == "__main__":
     temp_variable = 't2m' # 't2m', 'wbgt' or 'utci'
     daily_var = 'tx' # 'tg', 'tn' or 'tx' (mean, min, max), default value is 'tg'
-    start_year = 1975 # beginning of the studied period, default 1950
-    end_year = 2021 # end of the studied period, default 2021
+    start_year = 1975 # beginning of the studied period, default 1975
+    end_year = 2024 # end of the studied period, default 2021
 
-    start_year_ref = 1975 #beginning of the seasonal_cycle period, default 1950
+    start_year_ref = 1975 #beginning of the seasonal_cycle period, default 1975
     end_year_ref = 2021 #end of the seasonal_cycle period, default 2021
 
-    anomaly = True #If True, the whole process is based on anomalies and not absolute values of temperature. If False, absolute values are used. Default is True
+    anomaly = True #If True, seasonal_cycle is removed from temperature data before computing percentiles. If False, absolute values are used. Default is True
     # I strongly recommend to keep anomaly True if using relative thresholds, cf https://doi.org/10.1038/s41467-024-46349-x
     nb_days = 4 #nb of days used as a heatwave duration threshold, default value is 4
     relative_threshold = True #If True, the threshold value should be a percentile and locally defined. If False, the threshold should be an absolute value. Default is True
     threshold_value = 95 # If relative_threshold is True, percentile used as a threshold for heatwave occurence, value in ]0;100[, default value is 95 (consistent with default value of relative_threshold). If absolute value, expected to be a value in °C.
-    #smooth_span = 15 #half of size of smooth span for computing seasonal_cycle
     distrib_window_size = 15 #size (in days) of the temporal window that is used to compute the temperature distribution (on which is based the threshold) of each calendar day, default value is 15
     flex_time_span = 3 #In order to account for potential EM-DAT imprecisions, set a flexibility window of flex_time_span days, default value is 3
-    dust_threshold = 775 #Found empirically on ERA5 data. This number correspond to the thershold at which the number of heatwaves becomes stable (less than 1% of variation with an increment of 25)
-    nb_top_events = 10 #number of top detected events to look for in the litterature
-
-    connectivity = 26 # only 4,8 (2D) and 26, 18, and 6 (3D) are allowed
+    dust_threshold=775
+    nb_top_events=10 #number of top detected events to look for in the litterature
 
     name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
-    read_directory = "/home/user/These/extreme_htws_cc3d/Data"
+    read_directory = "Data"
 
-    write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
-    Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
     pop_file_path = join(read_directory,"GHS-POP","GHS_POP_R2023A_1975_2030_ERA5_Europe_grid.nc")
-    temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1975-2024.nc")
     emdat_file_path = join(read_directory,"EM-DAT","EMDAT_Europe_Turkey-1975-2021-heatwaves.xlsx")
 
+    print("daily_var:", daily_var)
+    print("nb_days:", nb_days)
+    print("threshold_value:", threshold_value)
+    print("connectivity:", connectivity)
+    print(f"study period: {start_year}-{end_year}")
+    print(f"baseline period: {start_year_ref}-{end_year_ref}")
+    write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_connec_{connectivity}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}")
+    Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
+    temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1975-2024.nc")
     if distrib_window_size%2==0:
         raise ValueError('distrib_window_size is even. It has to be odd so the window can be centered on the computed day.')
     if relative_threshold==False and anomaly==True:
@@ -76,7 +74,7 @@ if __name__ == "__main__":
 
     if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
         print("\n Running validate_indices_vs_emdat_impacts... \n")
-        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity)
+        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity,dont_skip_figure=True)
 
     if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
         print("\n Running analysis_top_detected_events... \n")
