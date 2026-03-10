@@ -1,11 +1,6 @@
 Data/catalogue_htws_MeteoFrance.csv
 Data/catalogue_htws_MeteoFrance.xlsx
-Data/lien_data.txt
 Data/ERA5/t2m/*
-Data/ERA5/wbgt/*
-Data/ERA5/utci/*
-Data/ERA5/wbgt_simple/*
-!Data/EM-DAT/EMDAT_Europe-1950-2022-heatwaves.xlsx
 !Data/EM-DAT/Lucy_Hammond_ETE_data_V2.xlsx
 !Data/Dates_converter.xlsx
 test.pdf
@@ -21,11 +16,11 @@ ffmpeg.exe
 *.png
 animation_backup
 docs/*
-!Data/EM-DAT/EMDAT_Europe_Turkey-1975-2021-heatwaves
+!Data/EM-DAT/EMDAT_Europe_Turkey-1975-2021-heatwaves.xlsx
 Data/EM-DAT/*
 Code/thermofeel-1.0.0/*
 Code/thermofeel-1.0.0
 Data/*/*.nc
 txt.txt
-Data/ERA5_t2m_tx_95th_4days_flex_3d_1975_2021_ref_1975_2021/*
-Data/ERA5_t2m_tx_95th_4days_flex_3d_1975_2024_ref_1975_2021/*
+Data/ERA5_*
+Data/ERA5_*
