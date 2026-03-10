@@ -429,7 +429,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     htw_indices = ['Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Exposed_population','Temp_pop','HWMId_pop','HWMId_pop_mean']#,'Total Exposed_population'
     shown_indices = ['Intensity', 'HWMId_sum','Exposed_population','HWMId_pop']
 
-    df_scores = pd.DataFrame(index=htw_indices,columns=['R Pearson','p-value','significance','AUC ROC','Total score'],dtype=object)
+    df_scores = pd.DataFrame(index=htw_indices,columns=['R Pearson','AUC ROC','R2','Total score'],dtype=object)
     df_correlation = df_htws[df_htws['EM-DAT heatwaves'].map(len)>1]
 
     log_scale_dict = {'Intensity':False,'Spatial extent':True,'Duration':False,'Max':False,
@@ -461,7 +461,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
         
         df_scores.loc[index,'R2'] = str({'median':np.median(r2_bootstrap.bootstrap_distribution),'q5':r2_bootstrap.confidence_interval.low,'q95':r2_bootstrap.confidence_interval.high}) #np.round(correlation.rvalue,6)
-        df_scores.loc[index,'Total score'] = np.round(np.median(r2_bootstrap.bootstrap_distribution)*np.median(roc_auc_bootstrap.bootstrap_distribution)*np.median(correlation_bootstrap.bootstrap_distribution),6)
+        df_scores.loc[index,'Total score'] = np.round(eval(df_scores.loc[index,'R Pearson'])['median']*eval(df_scores.loc[index,'AUC ROC'])['median']*eval(df_scores.loc[index,'R2'])['median'],6)
 
         df_plot = df_htws[df_htws[index]>0]
         df_corrplot = df_correlation[df_correlation[index]>0]
