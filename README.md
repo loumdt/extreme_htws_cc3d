@@ -31,8 +31,8 @@ Scripts within the download_ERA5 folder can be used to download and preprocess E
 
 ## Code
 The user can set parameters in the ```run_analysis.py``` script, such as the chosen daily variable (tg, tx, or tn), the temperature variable, the intensity threshold, the duration threshold, the period of study.
-Then, running this script will carry out the entire heatwaves detection and overlap analysis process. It calls functions defined in ```utils.py```.
-Some complementary analysis is carried out in ```undetected_and_trends.ipynb```
+Then, running this script will carry out the entire heatwaves detection and overlap analysis process. It calls functions defined in ```utils.py```. Some fine tuning is necessary to plot the correct figures in the ```validate_indices_vs_emdat_impacts``` function, specifically in lines 546-587 of ```utils.py```.
+Some complementary analysis is carried out in ```undetected_and_trends.ipynb```.
 
 
-The script ```run_analysis.py``` allows to run the entire process for several parameters combinations.
+The script ```run_analysis_loop.py``` allows to run the entire process for several parameters combinations.
