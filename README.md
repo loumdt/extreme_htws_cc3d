@@ -4,7 +4,7 @@ Lou Mandonnet, Aglaé Jézéquel, Fabio D'Andrea, Améline Vallet
 Working Paper available on HAL: [https://hal.science/hal-05495839](https://hal.science/hal-05495839)
 
 Users will have to download data of the three datasets (ERA5, GHS-POP, EM-DAT), and preprocess data. Users will also have to set correct folder locations in the scripts.
-Preprocessed and output data are also available here: [https://doi.org/10.5281/zenodo.18496310](https://doi.org/10.5281/zenodo.18496310)
+Preprocessed and output data is also available here: [https://doi.org/10.5281/zenodo.18980027](https://doi.org/10.5281/zenodo.18980027)
 
 ## Datasets
 
@@ -19,7 +19,7 @@ Preprocessed and output data are also available here: [https://doi.org/10.5281/z
 
 ## Data preprocessing
 ### ERA5
-Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data (```[chosen_variable]``` refers to either tx (daily maximum), tg (daily average) or tn (daily minimum):
+Scripts within the download_ERA5 folder can be used to download and preprocess ERA5 data. ```[chosen_variable]``` refers to either tx (daily maximum), tg (daily average) or tn (daily minimum):
 1. ```download_ERA5_t2m.sh```
 2. ```ERA5_convert_[chosen_variable].sh```
 3. ```ERA5_merge_time_[chosen_variable].sh```
