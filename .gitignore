@@ -2,8 +2,6 @@ Data/catalogue_htws_MeteoFrance.csv
 Data/catalogue_htws_MeteoFrance.xlsx
 Data/ERA5/t2m/*
 !Data/EM-DAT/Lucy_Hammond_ETE_data_V2.xlsx
-!Data/Dates_converter.xlsx
-test.pdf
 Code/Mask/*.png
 Code/compute_wbgts.py
 Output/*
