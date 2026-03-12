@@ -501,7 +501,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_frequency_export.rename_axis(index="Year").to_csv(join(write_directory,"frequency.csv"))
 
     print("Calling mk_senslope_CI.R...")
-    subprocess.call(f"Rscript /home/user/These/extreme_htws_cc3d/Code/Run_analysis/mk_senslope_CI.R {write_directory}", shell=True)
+    subprocess.call(f"Rscript {join(read_directory,'..','Code/Run_analysis/mk_senslope_CI.R')} {write_directory}", shell=True)
     print("Done")
 
     if dont_skip_figure :
