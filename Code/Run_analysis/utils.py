@@ -555,10 +555,6 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         f = plt.figure(figsize=(8, 6))
         ax = sns.scatterplot(data=df_htws.drop(drop_list), x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
             sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),style="Overlap",markers=["o","v"])
-        #ax = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
-        #    sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True))#,style="Overlap")
-        #sns.scatterplot(data=df_correlation, x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
-        #    sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),edgecolor='limegreen',linewidth=1)#,style="Overlap")
         ax.annotate('2003', 
                 xy=(df_htws_bbplot.loc[label_2003,'Year'],df_htws_bbplot.loc[label_2003,'Spatial extent']), 
                 xytext=(1995, 3.5e6),
