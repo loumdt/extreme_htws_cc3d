@@ -22,7 +22,8 @@ if __name__ == "__main__":
     flex_time_span = 3 #In order to account for potential EM-DAT imprecisions, set a flexibility window of flex_time_span days, default value is 3
     dust_threshold=775
     nb_top_events=10 #number of top detected events to look for in the litterature
-
+    connectivity = 26
+    
     name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
     read_directory = "Data"
