@@ -147,7 +147,7 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
 
         # Compute connected components for the remaining values of stack_temp
         
-        labels_in = cc3d.dust((stack_temp!=-9999),dust_threshold)
+        labels_in = cc3d.dust((stack_temp!=-9999),dust_threshold,connectivity=connectivity)
         labels_out, N_added = cc3d.connected_components(labels_in,connectivity=connectivity,return_N=True) # Return the table of labels and the number of added patterns
         
         # Record labels and add N_labels offset where labels are nonzero
@@ -190,8 +190,8 @@ def remove_outside_heatwaves(read_directory,labels,dust_threshold=775,connectivi
     land_mask.close()
     return labels
 
-def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=2021,temp_variable='t2m',anomaly=True) :
-    """Compute the Russo_HWMId index map.
+def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=2021,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m') :
+    """Compute the HWMId index.
     Based on HWMId defined by Russo et al (2015, https://dx.doi.org/10.1088/1748-9326/10/12/124003 )."""
 
     ds = xr.open_dataset(join(temp_file_path), engine='netcdf4')
@@ -199,18 +199,12 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     # Drop Feb 29 and only keep JJA days and years of interest
     da = da.convert_calendar("noleap")
     da = da.sel(time=(da.time.dt.year>=start_year) & (da.time.dt.year<=end_year))
-    da = da.sel(time=(da.time.dt.season=='JJA'))
+    da_ref = da.sel(time=(da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref))
     
-    # if anomaly :
-    #     # Keep only JJA values
-    #     seasonal_cycle = xr.open_dataarray(join(write_directory,f"seasonal_cycle.nc"), engine='netcdf4')
-    #     mask = (seasonal_cycle.dayofyear>=152) & (seasonal_cycle.dayofyear<=243) # dayofyear ranges from 1 to 365 ; 152 is June 1st, 243 is August 31st
-    #     seasonal_cycle = seasonal_cycle.sel(dayofyear=mask)
-    #     for year in tqdm(range(len(da.time)//92)) : # Iterate over the number of years
-    #         da[year*92:(year+1)*92,:,:] = da[year*92:(year+1)*92,:,:] - seasonal_cycle.data # Compute anomaly
+    da = da.sel(time=(da.time.dt.season=='JJA'))
         
-    temp_25p = np.percentile(da.groupby(da.time.dt.year).max(), 25, axis=0)
-    temp_75p = np.percentile(da.groupby(da.time.dt.year).max(), 75, axis=0)
+    temp_25p = np.percentile(da_ref.groupby(da_ref.time.dt.year).max(), 25, axis=0)
+    temp_75p = np.percentile(da_ref.groupby(da_ref.time.dt.year).max(), 75, axis=0)
     
     Russo_HWMId = da.copy()
     Russo_HWMId.data = np.maximum((da - temp_25p)/(temp_75p - temp_25p), 0)
@@ -221,8 +215,7 @@ def compute_Russo_HWMId(write_directory,temp_file_path,start_year=1975,end_year=
     Russo_HWMId.close()
     da.close()
     ds.close()
-    #if anomaly :
-    #    seasonal_cycle.close()
+
     return
 
 
