@@ -63,7 +63,7 @@ if __name__ == "__main__":
         
     if overwrite_files or exists(join(write_directory,"Russo_HWMId.nc"))==False :
         print("\n Running compute_Russo_HWMId... \n")
-        compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,anomaly=anomaly)
+        compute_Russo_HWMId(write_directory=write_directory,temp_file_path=temp_file_path,start_year=start_year,end_year=end_year,start_year_ref=start_year_ref,end_year_ref=end_year_ref,temp_variable=temp_variable)
 
     if overwrite_files or exists(join(write_directory,"df_htws.csv"))==False :
         print("\n Running create_heatwaves_indices_database... \n")
