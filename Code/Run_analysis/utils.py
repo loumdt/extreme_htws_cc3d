@@ -307,10 +307,13 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
     return
 
 
-def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_time_span=3,start_year=1975,end_year=2021):
+def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_time_span=3,start_year=1975,end_year=2021,merge_method='weighted',strongest_index='HWMId_pop'):
     '''This function is used to analyse the spatial and temporal overlap between EM-DAT heatwaves and the meteorological database heatwaves (default ERA5) detected with the CC3D scan.
     The detection threshold depends on the parameters used precedently, which is why all these parameters are required.
-    This function can be used with several variables'''
+    This function can be used with several variables
+    merge_method = 'weighted', 'equal' or 'strongest'
+    strongest_index is the index used in case merge_method = 'strongest'
+    '''
 
     # Load EM-DAT dataset
     df_emdat = pd.read_excel(join(emdat_file_path),header=0, index_col=0) 
@@ -376,20 +379,37 @@ def analyze_emdat_overlap(read_directory,write_directory,emdat_file_path,flex_ti
         
         labels_list = np.unique(da_labels_event.data)
         labels_list = labels_list[np.where(labels_list!=0)] # Remove zero which corresponds to the absence of hot point, not a heatwave label ID
-        summed_area_dict = {}
-        total_summed_area = 0
-        for label in labels_list :
-            da_lab_htw = da_labels_event.where(da_labels_event==label,drop=False)
-            da_lab_htw.data = (da_lab_htw.data>0)
-            summed_area = (da_lab_htw*da_cell_area.data).sum().data
-            summed_area_dict[label] = summed_area
-            total_summed_area += summed_area
 
-        for label in labels_list :
-            htw_list = df_htws.loc[label,'EM-DAT heatwaves']
-            df_htws.loc[label,'EM-DAT heatwaves'] = htw_list + ","*(len(htw_list)>1) + emdat_event
-            if ~(df_emdat.loc[emdat_event,'Total Deaths'] is None or np.isnan(df_emdat.loc[emdat_event,'Total Deaths'])) :
-                df_htws.loc[label,'EM-DAT Total Deaths'] += round(df_emdat.loc[emdat_event,'Total Deaths']*summed_area_dict[label]/total_summed_area)
+        if merge_method == 'weighted':
+            summed_area_dict = {}
+            total_summed_area = 0
+            for label in labels_list :
+                da_lab_htw = da_labels_event.where(da_labels_event==label,drop=False)
+                da_lab_htw.data = (da_lab_htw.data>0)
+                summed_area = (da_lab_htw*da_cell_area.data).sum().data
+                summed_area_dict[label] = summed_area
+                total_summed_area += summed_area
+            for label in labels_list:
+                htw_list = df_htws.loc[label,'EM-DAT heatwaves']
+                df_htws.loc[label,'EM-DAT heatwaves'] = htw_list + ","*(len(htw_list)>1) + emdat_event
+                if ~(df_emdat.loc[emdat_event,'Total Deaths'] is None or np.isnan(df_emdat.loc[emdat_event,'Total Deaths'])) :
+                    df_htws.loc[label,'EM-DAT Total Deaths'] += round(df_emdat.loc[emdat_event,'Total Deaths']*summed_area_dict[label]/total_summed_area)
+        elif merge_method == 'equal':
+            for label in labels_list:
+                htw_list = df_htws.loc[label,'EM-DAT heatwaves']
+                df_htws.loc[label,'EM-DAT heatwaves'] = htw_list + ","*(len(htw_list)>1) + emdat_event
+                if ~(df_emdat.loc[emdat_event,'Total Deaths'] is None or np.isnan(df_emdat.loc[emdat_event,'Total Deaths'])) :
+                    df_htws.loc[label,'EM-DAT Total Deaths'] += round(df_emdat.loc[emdat_event,'Total Deaths']/len(labels_list))
+        elif merge_method == 'strongest':
+            if len(labels_list)>0:
+                strongest_label = df_htws.loc[labels_list,strongest_index].idxmax()
+                labels_list = [strongest_label]
+                htw_list = df_htws.loc[strongest_label,'EM-DAT heatwaves']
+                df_htws.loc[strongest_label,'EM-DAT heatwaves'] = htw_list + ","*(len(htw_list)>1) + emdat_event
+                if ~(df_emdat.loc[emdat_event,'Total Deaths'] is None or np.isnan(df_emdat.loc[emdat_event,'Total Deaths'])):
+                    df_htws.loc[strongest_label,'EM-DAT Total Deaths'] += int(df_emdat.loc[emdat_event,'Total Deaths'])
+        else:
+            raise ValueError(f"Invalid merge_method value. Should be one of 'weighted', 'equal' or 'strongest' but got {merge_method}.")
         df_emdat.loc[emdat_event,'overlap CC3D'] = str(labels_list)
     # Save dataframe 
     df_htws.to_csv(join(write_directory,"df_htws_step2.csv"))
@@ -515,10 +535,11 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         for i in range(len(shown_indices)) :
             df_plot = df_htws[df_htws[shown_indices[i]]>0]
             df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
-            ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
-            sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='b') 
+            #ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
+            ax = sns.histplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bins=30, ax=axs[i//2,i%2]) # Plot KDE distribution
+            sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='k') 
             sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.25,lw=1,legend=False, ax=axs[i//2,i%2])
-            plt.ylim([0,1.05])
+            plt.ylim([0,30.05])
             if i%2==1 :
                 ax.set(ylabel=None)
         f.tight_layout()
