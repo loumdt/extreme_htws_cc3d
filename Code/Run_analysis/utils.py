@@ -486,9 +486,8 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
         # Plot distributions showing overlapping heatwaves
         sns.set_theme(style="whitegrid")
-        ax = sns.displot(df_plot, x=index, kind="kde", log_scale=log_scale_dict[index], bw_adjust=0.5) # Plot KDE distribution
-        sns.rugplot(df_plot,x=index) 
-        sns.rugplot(df_corrplot,x=index,hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.1,legend=False)
+        ax = sns.displot(df_plot, x=index, kind="hist", log_scale=log_scale_dict[index], bins=30) # Plot distribution histogram
+        sns.rugplot(df_corrplot,x=index,hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.1,legend=False) # Add overlap heatwaves and their impacts
         # Add colorbar for EM-DAT Total Deaths
         ax.figure.colorbar(sm,ax=ax.ax,label='Total Deaths')
         plt.savefig(join(write_directory,'figs',f"distrib_{index}.pdf"),dpi=1200)
@@ -535,10 +534,8 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         for i in range(len(shown_indices)) :
             df_plot = df_htws[df_htws[shown_indices[i]]>0]
             df_corrplot = df_correlation[df_correlation[shown_indices[i]]>0]
-            #ax = sns.kdeplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bw_adjust=0.5, ax=axs[i//2,i%2]) # Plot KDE distribution
-            ax = sns.histplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bins=30, ax=axs[i//2,i%2]) # Plot KDE distribution
-            sns.rugplot(df_plot,x=shown_indices[i], ax=axs[i//2,i%2],color='k') 
-            sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.25,lw=1,legend=False, ax=axs[i//2,i%2])
+            ax = sns.histplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bins=30, ax=axs[i//2,i%2]) # Plot distribution histogram
+            sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.25,lw=1,legend=False, ax=axs[i//2,i%2]) # Add overlap heatwaves and their impacts
             plt.ylim([0,30.05])
             if i%2==1 :
                 ax.set(ylabel=None)
