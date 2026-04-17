@@ -262,7 +262,6 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         da_temp[year*92:(year+1)*92,:,:] = da_temp[year*92:(year+1)*92,:,:] - da_threshold.data
 
     # Compute weights for latitude-weighted mean
-    #weights = np.cos(np.deg2rad(da_temp.lat))
     weights = da_cell_area
     weights.name = "weights"
 
