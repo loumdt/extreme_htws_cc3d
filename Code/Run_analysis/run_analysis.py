@@ -25,6 +25,7 @@ if __name__ == "__main__":
     connectivity = 26
     
     merge_method='weighted' #'weighted', 'equal' or 'strongest'
+    dont_skip_figure=True # If True, plot figures in validate_indices_vs_emdat_impacts. Bubble plot needs tuning to avoid errors
 
     name_dict_threshold = {True : 'th', False : 'C'} #If relative threshold, value is a percentile; if absolute threshold, value is in °C
 
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     print("connectivity:", connectivity)
     print(f"study period: {start_year}-{end_year}")
     print(f"baseline period: {start_year_ref}-{end_year_ref}")
+    print(f"merge_method: {merge_method}")
     write_directory = join(read_directory,f"ERA5_{temp_variable}_{daily_var}_{threshold_value}{name_dict_threshold[relative_threshold]}_connec_{connectivity}_{nb_days}days_flex_{flex_time_span}d_{start_year}_{end_year}_ref_{start_year_ref}_{end_year_ref}{'_anomaly'*anomaly}_merge_{merge_method}")
     Path(join(write_directory,'figs')).mkdir(parents=True, exist_ok=True)
     temp_file_path = join(read_directory,"ERA5",temp_variable,f"ERA5_{temp_variable}_{daily_var}_Europe_day_0.25deg_1975-2024.nc")
@@ -77,7 +79,7 @@ if __name__ == "__main__":
 
     if overwrite_files or exists(join(write_directory,'figs',"distrib_4idx.pdf"))==False :
         print("\n Running validate_indices_vs_emdat_impacts... \n")
-        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity,dont_skip_figure=True)
+        validate_indices_vs_emdat_impacts(read_directory=read_directory,write_directory=write_directory,emdat_file_path=emdat_file_path,pop_file_path=pop_file_path,start_year=start_year,end_year=end_year,temp_variable=temp_variable,daily_var=daily_var,start_year_ref=start_year_ref,end_year_ref=end_year_ref,anomaly=anomaly,nb_days=nb_days,threshold_value=threshold_value,relative_threshold=relative_threshold,flex_time_span=flex_time_span,connectivity=connectivity,dont_skip_figure=dont_skip_figure)
 
     if overwrite_files or exists(join(write_directory,f"df_htws_top_events_NOCHANGE.csv"))==False :
         print("\n Running analysis_top_detected_events... \n")
