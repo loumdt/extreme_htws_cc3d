@@ -4,7 +4,7 @@ Lou Mandonnet, Aglaé Jézéquel, Fabio D'Andrea, Améline Vallet
 Working Paper available on HAL: [https://hal.science/hal-05495839](https://hal.science/hal-05495839)
 
 Users will have to download data of the three datasets (ERA5, GHS-POP, EM-DAT), and preprocess data. Users will also have to set correct folder locations in the scripts.
-Preprocessed and output data is also available here: [https://doi.org/10.5281/zenodo.18980027](https://doi.org/10.5281/zenodo.18980027)
+Preprocessed and output data is also available here: [https://doi.org/10.5281/zenodo.20026471](https://doi.org/10.5281/zenodo.20026471)
 
 ## Datasets
 
