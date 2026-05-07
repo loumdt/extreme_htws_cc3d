@@ -15,6 +15,7 @@ from ast import literal_eval
 import subprocess
 import json
 from sklearn.linear_model import LinearRegression
+import mannkendall as mk
 
 def compute_seasonal_cycle(write_directory,temp_file_path,start_year_ref=1975,end_year_ref=2021,temp_variable='t2m') :
     '''This function computes a seasonal_cycle for each calendar day of the year.
@@ -250,7 +251,7 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
 
     # Load population data
     ds_pop = xr.open_dataset(join(pop_file_path), engine='netcdf4') # Population count, need to convert to density
-    da_pop = ds_pop.Band1*1000 # Data is in thousands of people and we want the real number of people
+    da_pop = ds_pop.Band1
 
     da_pop_density = da_pop/da_cell_area # Population density in person/km²
 
@@ -288,8 +289,8 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights).mean().data
-        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data/1e3 # Compute population in thousands to avoid later memory issues with bootstrap and MK test 
-        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data/1e3 # Compute population in thousands to avoid later memory issues with bootstrap and MK test 
+        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
+        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
         df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).mean().data
@@ -436,7 +437,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
 
     land_mask = xr.open_dataset(join(read_directory,'ERA5','Mask',f"Mask_Europe_land_only_ERA5_0.25deg.nc"),engine='netcdf4').mask
     ds_pop = xr.open_dataset(join(pop_file_path), engine='netcdf4') # Population count, need to convert to density
-    da_pop = ds_pop.Band1 # Data is in thousands of people
+    da_pop = ds_pop.Band1
     pop_Europe = da_pop.where(land_mask==0).sum(dim=("lat","lon"))
 
     htw_indices = ['Intensity','Spatial extent','Duration','Max','Temp_sum','HWMId_sum','HWMId_mean','Exposed_population','Temp_pop','HWMId_pop','HWMId_pop_mean']#,'Total Exposed_population'
@@ -460,18 +461,17 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         if np.isnan(df_htws.loc[:,index]).any():
             df_scores.loc[index,'R2'] = str({'median':0,'q5':0,'q95':0})
         else:
-            r2_bootstrap = stats.bootstrap(data=(df_correlation.loc[:,index],df_correlation.loc[:,'EM-DAT Total Deaths']),statistic=r2_score_for_bootstrap, n_resamples=1e4, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
+            r2_bootstrap = stats.bootstrap(data=(df_correlation.loc[:,index],df_correlation.loc[:,'EM-DAT Total Deaths']),statistic=r2_score_for_bootstrap, n_resamples=1e3, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
             df_scores.loc[index,'R2'] = str({'median':np.median(r2_bootstrap.bootstrap_distribution),'q5':r2_bootstrap.confidence_interval.low,'q95':r2_bootstrap.confidence_interval.high}) #np.round(correlation.rvalue,6)
         
         if np.isnan(df_htws.loc[:,index]).any():
             df_scores.loc[index,'AUC ROC'] = str({'median':0,'q5':0,'q95':0})
         else:
-            roc_auc_bootstrap = stats.bootstrap(data=((df_htws['EM-DAT heatwaves'].map(len)>1).values,df_htws.loc[:,index]),statistic=metrics.roc_auc_score, n_resamples=1e4, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
+            roc_auc_bootstrap = stats.bootstrap(data=((df_htws['EM-DAT heatwaves'].map(len)>1).values,df_htws.loc[:,index]),statistic=metrics.roc_auc_score, n_resamples=1e3, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
             df_scores.loc[index,'AUC ROC'] = str({'median':np.median(roc_auc_bootstrap.bootstrap_distribution),'q5':roc_auc_bootstrap.confidence_interval.low,'q95':roc_auc_bootstrap.confidence_interval.high}) #np.round(roc_auc,6)
 
-        correlation_bootstrap = stats.bootstrap(data=(df_correlation.loc[:,index],df_correlation.loc[:,'EM-DAT Total Deaths']),statistic=correlation_for_bootstrap, n_resamples=1e4, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
+        correlation_bootstrap = stats.bootstrap(data=(df_correlation.loc[:,index],df_correlation.loc[:,'EM-DAT Total Deaths']),statistic=correlation_for_bootstrap, n_resamples=1e3, paired=True, confidence_level=0.90, alternative='two-sided', method='percentile')
         df_scores.loc[index,'R Pearson'] = str({'median':np.median(correlation_bootstrap.bootstrap_distribution),'q5':correlation_bootstrap.confidence_interval.low,'q95':correlation_bootstrap.confidence_interval.high})#np.round(correlation.rvalue,6)
-
         
         df_scores.loc[index,'R2'] = str({'median':np.median(r2_bootstrap.bootstrap_distribution),'q5':r2_bootstrap.confidence_interval.low,'q95':r2_bootstrap.confidence_interval.high}) #np.round(correlation.rvalue,6)
         df_scores.loc[index,'Total score'] = np.round(eval(df_scores.loc[index,'R Pearson'])['median']*eval(df_scores.loc[index,'AUC ROC'])['median']*eval(df_scores.loc[index,'R2'])['median'],6)
@@ -503,18 +503,123 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_htws.to_csv(join(write_directory,"df_htws_step3.csv"))
 
     # Compute and export dataframe for frequency trend
-    df_frequency_export = pd.DataFrame(columns=["Heatwaves"],index=range(start_year,end_year+1),data=None)
-    for i in df_frequency_export.index:
+    df_frequency = pd.DataFrame(columns=["Heatwaves"],index=range(start_year,end_year+1),data=None)
+    for i in df_frequency.index:
         try :
-            df_frequency_export.loc[i,"Heatwaves"]=df_htws.groupby("Year").count().loc[i,"Start Date"]
+            df_frequency.loc[i,"Heatwaves"]=df_htws.groupby("Year").count().loc[i,"Start Date"]
         except: # Some years may be absent because there are no heatwaves
-            df_frequency_export.loc[i,"Heatwaves"]=0
-    # Export frequency to csv for usage in R script
-    df_frequency_export.rename_axis(index="Year").to_csv(join(write_directory,"frequency.csv"))
+            df_frequency.loc[i,"Heatwaves"]=0
+    
+    print("Computing MK trend tests...")
+    mk_result_dict_list = []
+    # Compute MK trend test for frequency
+    dates_array = np.array([datetime(i,1,1) for i in df_frequency.index.values]) # Convert Year to proper datetime
+    observations_array = np.array(df_frequency['Heatwaves']).astype(float)
+    mk_result = mk.mk_temp_aggr(dates_array,observations_array,resolution=0.9)
+    mk_result = mk_result[list(mk_result.keys())[-1]] # Only take last dict
+    mk_result['_row'] = 'Frequency'
+    mk_result_dict_list.append(mk_result)
 
-    print("Calling mk_senslope_CI.R...")
-    subprocess.call(f"Rscript {join(read_directory,'..','Code/Run_analysis/mk_senslope_CI.R')} {write_directory}", shell=True)
-    print("Done")
+    df_htws['Spatial extent'] = df_htws['Spatial extent']/1e3 # Divide to reduce memory load
+    df_htws['HWMId_pop'] = df_htws['HWMId_pop']/1e6 # Divide to reduce memory load
+    df_htws['HWMId_sum'] = df_htws['HWMId_sum']/1e5 # Divide to reduce memory load
+
+    # Compute MK trend test for all other indices
+    for index in tqdm(['Intensity','Spatial extent','Duration','Max','HWMId_sum','Exposed_population','HWMId_pop','Exposed_population (relative)']):
+        dates_array = np.array([datetime(i,1,1) for i in df_htws['Year']]) # Convert Year to proper datetime
+        observations_array = np.array(df_htws[index]).astype(float)
+        mk_result = mk.mk_temp_aggr(dates_array,observations_array,resolution=0.01)
+        mk_result = mk_result[list(mk_result.keys())[-1]] # Only take last dict
+        mk_result['_row'] = index
+        # If divided to reduce memory load, set back to original value
+        if index == 'Spatial extent':
+            mk_result['ucl'] = mk_result['ucl']*1e3
+            mk_result['lcl'] = mk_result['lcl']*1e3
+            mk_result['slope'] = mk_result['slope']*1e3
+        elif index == 'HWMId_pop':
+            mk_result['ucl'] = mk_result['ucl']*1e6
+            mk_result['lcl'] = mk_result['lcl']*1e6
+            mk_result['slope'] = mk_result['slope']*1e6
+        elif index == 'HWMId_sum':
+            mk_result['ucl'] = mk_result['ucl']*1e5
+            mk_result['lcl'] = mk_result['lcl']*1e5
+            mk_result['slope'] = mk_result['slope']*1e5
+        mk_result_dict_list.append(mk_result)
+
+    df_htws['Spatial extent'] = df_htws['Spatial extent']*1e3 # Set back to original value
+    df_htws['HWMId_pop'] = df_htws['HWMId_pop']*1e6 # Set back to original value
+    df_htws['HWMId_sum'] = df_htws['HWMId_sum']*1e5 # Set back to original value
+
+    # Export mk_result to JSON file
+    mk_result_json = json.dumps(mk_result_dict_list)
+    with open(join(write_directory,"mk_result.json"),'w') as f:
+        f.write(mk_result_json)
+
+    # Export frequency to csv
+    df_frequency.rename_axis(index="Year").to_csv(join(write_directory,"frequency.csv"))
+
+    df_best_scores = pd.read_csv(join(read_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
+
+    df_scores = df_scores.loc[["Intensity","HWMId_sum","Exposed_population","HWMId_pop"]]
+
+    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)&(df_best_scores['connectivity']==connectivity)].index.values[0]
+
+    # Write MK results into df_best_scores
+    df_mk_result = pd.json_normalize(mk_result_dict_list)
+    df_mk_result = df_mk_result.set_index('_row')
+    for index in df_mk_result.index:
+        df_best_scores = df_best_scores.astype({f"trend_{index}":str})
+        df_best_scores.loc[get_index,f"trend_{index}"] = str({'median':df_mk_result.loc[index,'slope'],'q5':df_mk_result.loc[index,'lcl'],'q95':df_mk_result.loc[index,'ucl']})
+
+    best_auc_roc_idx = "Intensity"
+    best_pearson_R_idx = "Intensity"
+    best_R2_idx	= "Intensity"
+    total_score_best_index = "Intensity"
+
+    # Record scores and best scores in sensitivity analysis table
+    for index in ["Intensity","HWMId_sum","Exposed_population","HWMId_pop"] :
+        pearson = eval(df_scores.loc[index,'R Pearson'])['median']
+        df_best_scores.loc[get_index,f"pearson_R_{index}"] = pearson
+        if pearson > eval(df_scores.loc[best_pearson_R_idx,'R Pearson'])['median']:
+            best_pearson_R_idx = index
+
+        roc_auc = eval(df_scores.loc[index,'AUC ROC'])['median']
+        df_best_scores.loc[get_index,f"auc_roc_{index}"] = roc_auc
+        if roc_auc > eval(df_scores.loc[best_auc_roc_idx,'AUC ROC'])['median']:
+            best_auc_roc_idx = index
+
+        R2 = eval(df_scores.loc[index,'R2'])['median']
+        df_best_scores.loc[get_index,f"R2_{index}"] = R2
+        if R2 > eval(df_scores.loc[best_R2_idx,'R2'])['median']:
+            best_R2_idx = index
+            
+        total_score = df_scores.loc[index,'Total score']
+        df_best_scores.loc[get_index,f"Total_score_{index}"] = total_score
+        if total_score > df_scores.loc[total_score_best_index,'Total score']:
+            total_score_best_index = index
+
+    df_best_scores = df_best_scores.astype({"best_pearson_R_idx":str,"best_auc_roc_idx":str,"best_R2_idx":str,"total_score_best_index":str})
+    df_best_scores.loc[get_index,"best_pearson_R_idx"] = best_pearson_R_idx
+    df_best_scores.loc[get_index,"best_auc_roc_idx"] = best_auc_roc_idx
+    df_best_scores.loc[get_index,"best_R2_idx"] = best_R2_idx
+    df_best_scores.loc[get_index,"total_score_best_index"] = total_score_best_index
+        
+    df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
+    df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
+
+    # Record the number of matching EM-DAT heatwaves
+    list_htws = []
+    for htws in df_htws["EM-DAT heatwaves"] :
+        htws = htws.replace(' ','')
+        if len(htws)>0 :
+            htws = htws.split(",")
+            list_htws += htws
+    list_htws = np.unique(list_htws)
+    df_best_scores.loc[get_index,"nb_emdat_matching_htws"] = len(list_htws)
+    df_best_scores = df_best_scores.astype({"emdat_matching_htws":str})
+    df_best_scores.loc[get_index,"emdat_matching_htws"] = str(list_htws)
+
+    df_best_scores.to_csv(join(read_directory,"summary_detection_overlap_sensitivity.csv"))
 
     if dont_skip_figure :
         # Plot distribution and correlation for 4 shown_indices (4 subplots)
@@ -604,76 +709,6 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         plt.tight_layout()
         plt.savefig(join(write_directory,'figs',"bubble_plot_HWMId_pop.pdf"),dpi=1200)
         plt.close()
-
-    df_best_scores = pd.read_csv(join(read_directory,f"summary_detection_overlap_sensitivity.csv"),header=0, index_col=0)
-
-    df_scores = df_scores.loc[["Intensity","HWMId_sum","Exposed_population","HWMId_pop"]]
-
-    get_index = df_best_scores[(df_best_scores['temp_variable']==temp_variable)&(df_best_scores['daily_var']==daily_var)&(df_best_scores['start_year']==start_year)&(df_best_scores['end_year']==end_year)&(df_best_scores['start_year_ref']==start_year_ref)&(df_best_scores['end_year_ref']==end_year_ref)&(df_best_scores['anomaly']==anomaly)&(df_best_scores['nb_days']==nb_days)&(df_best_scores['relative_threshold']==relative_threshold)&(df_best_scores['threshold_value']==threshold_value)&(df_best_scores['flex_time_span']==flex_time_span)&(df_best_scores['connectivity']==connectivity)].index.values[0]
-
-    best_auc_roc_idx = "Intensity"
-    best_pearson_R_idx = "Intensity"
-    best_R2_idx	= "Intensity"
-    total_score_best_index = "Intensity"
-
-    # Record scores and best scores in sensitivity analysis table
-    for index in ["Intensity","HWMId_sum","Exposed_population","HWMId_pop"] :
-        pearson = eval(df_scores.loc[index,'R Pearson'])['median']
-        df_best_scores.loc[get_index,f"pearson_R_{index}"] = pearson
-        if pearson > eval(df_scores.loc[best_pearson_R_idx,'R Pearson'])['median']:
-            best_pearson_R_idx = index
-
-        roc_auc = eval(df_scores.loc[index,'AUC ROC'])['median']
-        df_best_scores.loc[get_index,f"auc_roc_{index}"] = roc_auc
-        if roc_auc > eval(df_scores.loc[best_auc_roc_idx,'AUC ROC'])['median']:
-            best_auc_roc_idx = index
-
-        R2 = eval(df_scores.loc[index,'R2'])['median']
-        df_best_scores.loc[get_index,f"R2_{index}"] = R2
-        if R2 > eval(df_scores.loc[best_R2_idx,'R2'])['median']:
-            best_R2_idx = index
-            
-        total_score = df_scores.loc[index,'Total score']
-        df_best_scores.loc[get_index,f"Total_score_{index}"] = total_score
-        if total_score > df_scores.loc[total_score_best_index,'Total score']:
-            total_score_best_index = index
-    df_best_scores = df_best_scores.astype({"best_pearson_R_idx":str,"best_auc_roc_idx":str,"best_R2_idx":str,"total_score_best_index":str})
-    df_best_scores.loc[get_index,"best_pearson_R_idx"] = best_pearson_R_idx
-    df_best_scores.loc[get_index,"best_auc_roc_idx"] = best_auc_roc_idx
-    df_best_scores.loc[get_index,"best_R2_idx"] = best_R2_idx
-    df_best_scores.loc[get_index,"total_score_best_index"] = total_score_best_index
-
-    # Load Mann-Kendall trend results
-    try:
-        with open(join(write_directory,"mk_result.json"), mode='r') as f:
-            mk_result = json.load(f)
-
-        df_mk_result = pd.json_normalize(mk_result)
-        df_mk_result = df_mk_result.set_index('_row')
-
-        
-        for index in df_mk_result.index:
-            df_best_scores = df_best_scores.astype({f"trend_{index}":str})
-            df_best_scores.loc[get_index,f"trend_{index}"] = str({'median':df_mk_result.loc[index,'slope'],'q5':df_mk_result.loc[index,'LCL'],'q95':df_mk_result.loc[index,'UCL']})
-    except: #In case unable to compute MK trend test, leave NaNs in sensitivity table
-        pass
-
-    df_best_scores.loc[get_index,"nb_detected_htws"] = len(df_htws)
-    df_best_scores.loc[get_index,"nb_overlap_htws"] = len(df_correlation)
-
-    # Record the number of matching EM-DAT heatwaves
-    list_htws = []
-    for htws in df_htws["EM-DAT heatwaves"] :
-        htws = htws.replace(' ','')
-        if len(htws)>0 :
-            htws = htws.split(",")
-            list_htws += htws
-    list_htws = np.unique(list_htws)
-    df_best_scores.loc[get_index,"nb_emdat_matching_htws"] = len(list_htws)
-    df_best_scores = df_best_scores.astype({"emdat_matching_htws":str})
-    df_best_scores.loc[get_index,"emdat_matching_htws"] = str(list_htws)
-
-    df_best_scores.to_csv(join(read_directory,"summary_detection_overlap_sensitivity.csv"))
 
     return
 
