@@ -289,8 +289,8 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights).sum().data
         df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights).mean().data
-        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
-        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
+        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data#/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
+        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data#/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
         df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).sum().data
         df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).mean().data
@@ -523,6 +523,7 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
     df_htws['Spatial extent'] = df_htws['Spatial extent']/1e3 # Divide to reduce memory load
     df_htws['HWMId_pop'] = df_htws['HWMId_pop']/1e6 # Divide to reduce memory load
     df_htws['HWMId_sum'] = df_htws['HWMId_sum']/1e5 # Divide to reduce memory load
+    df_htws['Exposed_population'] = df_htws['Exposed_population']/1e6 # Divide to reduce memory load
 
     # Compute MK trend test for all other indices
     for index in tqdm(['Intensity','Spatial extent','Duration','Max','HWMId_sum','Exposed_population','HWMId_pop','Exposed_population (relative)']):
@@ -544,11 +545,16 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
             mk_result['ucl'] = mk_result['ucl']*1e5
             mk_result['lcl'] = mk_result['lcl']*1e5
             mk_result['slope'] = mk_result['slope']*1e5
+        elif index == 'Exposed_population':
+            mk_result['ucl'] = mk_result['ucl']*1e6
+            mk_result['lcl'] = mk_result['lcl']*1e6
+            mk_result['slope'] = mk_result['slope']*1e6
         mk_result_dict_list.append(mk_result)
 
     df_htws['Spatial extent'] = df_htws['Spatial extent']*1e3 # Set back to original value
     df_htws['HWMId_pop'] = df_htws['HWMId_pop']*1e6 # Set back to original value
     df_htws['HWMId_sum'] = df_htws['HWMId_sum']*1e5 # Set back to original value
+    df_htws['Exposed_population'] = df_htws['Exposed_population']*1e6 # Divide to reduce memory load
 
     # Export mk_result to JSON file
     mk_result_json = json.dumps(mk_result_dict_list)
