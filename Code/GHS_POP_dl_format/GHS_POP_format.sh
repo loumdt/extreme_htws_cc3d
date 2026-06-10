@@ -34,7 +34,7 @@ echo "cdo inttime"
 cdo inttime,${year_start}-01-01,00:00:00,1year $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_merged.nc $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc
 rm $datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_merged.nc
 
-cdo -remapcon,${datadir2}/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc "$datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc" "$datadir/GHS_POP_R2023A_${year_start}_${year_end}_ERA5_Europe_grid.nc"
+cdo -remapsum,${datadir2}/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc "$datadir/GHS_POP_R2023A_4326_30ss_${year_start}_${year_end}_interpolated.nc" "$datadir/GHS_POP_R2023A_${year_start}_${year_end}_ERA5_Europe_grid.nc"
 
 cdo gridarea ${datadir2}/ERA5/t2m/ERA5_t2m_tx_Europe_day_0.25deg_1950-2021.nc ${datadir2}/ERA5/ERA5_Europe_cellarea.nc
 
