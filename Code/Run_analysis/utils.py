@@ -26,7 +26,9 @@ def compute_seasonal_cycle(write_directory,temp_file_path,start_year_ref=1975,en
     ds = xr.open_dataset(join(temp_file_path), engine='netcdf4')
     da = getattr(ds, temp_variable)
     # Keep only years of interest
-    da.sel(time=(da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref))
+    mask = (da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref)
+    da = da.sel(time=mask)
+    del mask
 
     # Drop Feb 29
     da = da.convert_calendar("noleap")
@@ -59,7 +61,9 @@ def compute_distrib_percentile(write_directory,temp_file_path,start_year_ref=197
     da = getattr(ds, temp_variable) # Iterate over files, except first one which has already been used in initialization
     # Drop 29 Feb and only keep the reference period
     da = da.convert_calendar("noleap")
-    da = da.sel(time=(da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref))
+    mask = (da.time.dt.year>=start_year_ref) & (da.time.dt.year<=end_year_ref)
+    da = da.sel(time=mask)
+    del mask
 
     # Create threshold table by copying seasonal_cycle table, values will be updated later
     threshold = seasonal_cycle.copy()
@@ -103,7 +107,6 @@ def cc3d_scan_heatwaves(read_directory,write_directory,temp_file_path,start_year
     Otherwise, values are set to -9999.'''
     # Set dust threshold to supress small amount of points. The threshold of 775 have been established by testing with different values and set to the point that the number of heatwaves did not change by more than 1% between two increment of 25.
 
-    
     ds = xr.open_dataset(join(temp_file_path), engine="netcdf4")
 
     if anomaly :
@@ -186,8 +189,14 @@ def remove_outside_heatwaves(read_directory,labels,dust_threshold=775,connectivi
     # Remove sea points, North Africa points, and Middle East points that are South of Turkey
     labels = labels * (land_mask.data==0)
 
-    # Remove small heatwaves with the cc3d dust function
-    labels = labels * cc3d.dust((labels>0),dust_threshold,connectivity=connectivity)
+    # Remove small heatwaves without using the cc3d dust function
+    labels_list = np.unique(labels)
+    labels_list = labels_list[np.where(labels_list!=0)] # Remove 0 which is not a heatwave label
+
+    for lab in labels_list:
+        if (labels==lab).sum() < dust_threshold:
+            labels = labels*((labels!=lab)) # Remove every point where label is one of a small heatwave
+    
     land_mask.close()
     return labels
 
@@ -262,10 +271,6 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
     for year in range(end_year-start_year+1) : # Compute temperature exceedance relative to the threshold, iterate over years (92 JJA days per year)
         da_temp[year*92:(year+1)*92,:,:] = da_temp[year*92:(year+1)*92,:,:] - da_threshold.data
 
-    # Compute weights for latitude-weighted mean
-    weights = da_cell_area
-    weights.name = "weights"
-
     for label in tqdm(labels_list) : # Iterate on heatwaves
         da_bool_htw = da_labels.where(da_labels==label, drop=True).fillna(0)>0 # Select days and grid points for the heatwave of interest and convert to bool array
         da_temp_htw = da_temp.where(da_labels==label, drop=True)
@@ -281,19 +286,23 @@ def create_heatwaves_indices_database(read_directory,write_directory,temp_file_p
         da_pop_htw = da_pop_htw.where(labels_bool_2D,drop=True)
         da_pop_density_htw = da_pop_density.sel(time=(da_pop.time.dt.year==year_event))
         da_pop_density_htw = da_pop_density_htw.where(labels_bool_2D,drop=True)
+
+        # Compute weights for area-weighted mean
+        weights = da_cell_area.where(labels_bool_2D, drop=True)
+        weights.name = "weights"
     
-        df_htws.loc[label,'Intensity'] = da_temp_htw.weighted(weights).mean().data
+        df_htws.loc[label,'Intensity'] = da_temp_htw.weighted(weights.fillna(0)).mean().data
         df_htws.loc[label,'Spatial extent'] = (da_cell_area*labels_bool_2D).sum().data
         df_htws.loc[label,'Duration'] = len(da_temp_htw.time)
         df_htws.loc[label,'Max'] = da_temp_htw.max().data
-        df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights).sum().data
-        df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights).sum().data
-        df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights).mean().data
-        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data#/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
-        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data#/1e6 # Compute population in millions to avoid later memory issues with bootstrap and MK test 
-        df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights).sum().data
-        df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).sum().data
-        df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights).mean().data
+        df_htws.loc[label,'Temp_sum'] = da_temp_htw.weighted(weights.fillna(0)).sum().data
+        df_htws.loc[label,'HWMId_sum'] = da_HWMId_htw.weighted(weights.fillna(0)).sum().data
+        df_htws.loc[label,'HWMId_mean'] = da_HWMId_htw.weighted(weights.fillna(0)).mean().data
+        df_htws.loc[label,'Exposed_population'] = da_pop_htw.sum().data
+        df_htws.loc[label,'Total Exposed_population'] = (da_bool_htw*da_pop_htw.data).sum().data
+        df_htws.loc[label,'Temp_pop'] = (da_temp_htw*da_pop_density_htw.data).weighted(weights.fillna(0)).sum().data
+        df_htws.loc[label,'HWMId_pop'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights.fillna(0)).sum().data
+        df_htws.loc[label,'HWMId_pop_mean'] = (da_HWMId_htw*da_pop_density_htw.data).weighted(weights.fillna(0)).mean().data
 
     # Save dataframe 
     df_htws.to_csv(join(write_directory,f"df_htws.csv"))
@@ -648,6 +657,8 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
             ax = sns.histplot(df_plot, x=shown_indices[i], log_scale=log_scale_dict[shown_indices[i]], bins=30, ax=axs[i//2,i%2]) # Plot distribution histogram
             sns.rugplot(df_corrplot,x=shown_indices[i],hue="EM-DAT Total Deaths",palette=sns.color_palette("YlOrBr", as_cmap=True),hue_norm=norm,height=0.25,lw=1,legend=False, ax=axs[i//2,i%2]) # Add overlap heatwaves and their impacts
             plt.ylim([0,30.05])
+            if i==2:
+                ax.set_xlim(1000,4e8)
             if i%2==1 :
                 ax.set(ylabel=None)
         f.tight_layout()
@@ -665,8 +676,8 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
                 drop_list.append(i)
         df_htws_bbplot = df_htws.drop(drop_list) # Drop the heatwaves where HWMId_pop = 0 in order to plot with logartihmic color scale
         # Bubbleplot, only for HWMId_pop
-        label_2003 = 159
-        label_2010 = [220,222,225,226]
+        label_2003 = [161,165]
+        label_2010 = [230,232,235,236]
         handles, labels = sns.scatterplot(data=df_htws_bbplot, x="Year", y="Spatial extent",  size="Duration",
             sizes=(20, 200),color='black').get_legend_handles_labels()
         plt.close()
@@ -678,7 +689,13 @@ def validate_indices_vs_emdat_impacts(read_directory,write_directory,emdat_file_
         ax = sns.scatterplot(data=df_htws.drop(drop_list), x="Year", y="Spatial extent", hue="HWMId_pop", hue_norm=norm, size="Duration",
             sizes=(20, 200),palette=sns.color_palette("rocket_r", as_cmap=True),style="Overlap",markers=["o","v"])
         ax.annotate('2003', 
-                xy=(df_htws_bbplot.loc[label_2003,'Year'],df_htws_bbplot.loc[label_2003,'Spatial extent']), 
+                xy=(df_htws_bbplot.loc[label_2003[0],'Year'],df_htws_bbplot.loc[label_2003[0],'Spatial extent']), 
+                xytext=(1995, 3.5e6),
+                arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.5',alpha=0.5),
+                fontsize=12,
+                color='red', alpha = 0.7)
+        ax.annotate('2003', 
+                xy=(df_htws_bbplot.loc[label_2003[1],'Year'],df_htws_bbplot.loc[label_2003[1],'Spatial extent']), 
                 xytext=(1995, 3.5e6),
                 arrowprops=dict(facecolor='red', width=1.5,connectionstyle='arc3, rad=-0.3',alpha=0.5),
                 fontsize=12,
