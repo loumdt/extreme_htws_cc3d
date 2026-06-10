@@ -3,8 +3,8 @@ Lou Mandonnet, Aglaé Jézéquel, Fabio D'Andrea, Améline Vallet
 
 Working Paper available on HAL: [https://hal.science/hal-05495839](https://hal.science/hal-05495839)
 
-Users will have to download data of the three datasets (ERA5, GHS-POP, EM-DAT), and preprocess data. Users will also have to set correct folder locations in the scripts.
-Preprocessed and output data is also available here: [https://doi.org/10.5281/zenodo.20026471](https://doi.org/10.5281/zenodo.20026471)
+Users will can either download data of the three datasets (ERA5, GHS-POP, EM-DAT) and preprocess data or can download the preprocessed dataset directly on Zenodo, where output data is also available for one sensitivity configuration: [https://doi.org/10.5281/zenodo.20623473](https://doi.org/10.5281/zenodo.20623473). 
+Users will also have to set correct folder locations in the scripts.
 
 ## Datasets
 
@@ -31,8 +31,8 @@ Scripts within the download_ERA5 folder can be used to download and preprocess E
 
 ## Code
 The user can set parameters in the ```run_analysis.py``` script, such as the chosen daily variable (tg, tx, or tn), the temperature variable, the intensity threshold, the duration threshold, the period of study.
-Then, running this script will carry out the entire heatwaves detection and overlap analysis process. It calls functions defined in ```utils.py```. Some fine tuning is necessary to plot the correct figures in the ```validate_indices_vs_emdat_impacts``` function, specifically in lines 546-587 of ```utils.py```.
-Some complementary analysis is carried out in ```undetected_and_trends.ipynb```.
-
+Then, running this script will carry out the entire heatwaves detection and overlap analysis process. It calls functions defined in ```utils.py```. Some fine tuning is necessary to plot the correct figures in the ```validate_indices_vs_emdat_impacts``` function, specifically in lines 678-726 of ```utils.py```.
 
 The script ```run_analysis_loop.py``` allows to run the entire process for several parameters combinations.
+
+Some complementary analysis is carried out in ```undetected_and_trends.ipynb```, and should be run after all desired sensitivity configurations of ```run_analysis.py```.
